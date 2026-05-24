@@ -1,10 +1,6 @@
-#include <iostream> 
-#include <vector>
 #include <cmath>
 
-#include "fft/core/types.h"
-
-using namespace FFTCore;
+#include "dft.h"
 
 std::vector<Complex> dft(const std::vector<Complex>& input) {
     size_t N = input.size();
