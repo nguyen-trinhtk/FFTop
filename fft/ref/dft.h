@@ -6,4 +6,4 @@
 
 using namespace FFTCore;
 
-std::vector<Complex> dft(const std::vector<Complex>& input);
+void dft(const std::vector<Complex>& input, std::vector<Complex>& output);

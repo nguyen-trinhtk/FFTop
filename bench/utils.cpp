@@ -87,7 +87,8 @@ double benchmark_ms(
 
     const auto start = Clock::now();
     for (int run = 0; run < runs; ++run) {
-        (void)fft(input);
+        std::vector<FFTCore::Complex> output;
+        fft(input, output);
     }
     const auto end = Clock::now();
 

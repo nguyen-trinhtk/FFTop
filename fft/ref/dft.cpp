@@ -1,11 +1,8 @@
-#include <cmath>
-
 #include "dft.h"
 
-std::vector<Complex> dft(const std::vector<Complex>& input) {
+void dft(const std::vector<Complex>& input, std::vector<Complex>& output) {
     size_t N = input.size();
-    std::vector<Complex> output(N);
-    const Real PI = std::acos(-1.0);
+    output.resize(N);
     
     for (size_t k = 0; k < N; ++k) {
         output[k] = Complex(0.0, 0.0);
@@ -15,5 +12,4 @@ std::vector<Complex> dft(const std::vector<Complex>& input) {
             output[k] += input[n] * w;
         }
     }
-    return output;
 }

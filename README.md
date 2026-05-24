@@ -7,11 +7,12 @@ Please refer to [this document](./doc/optimizations.md) to learn more about each
 ---
 
 ### Benchmarking
-The latest (rough) benchmark table for `N=65536`is shown below
+The latest (rough) benchmark table for `N=4096`is shown below
 
-| Variant | Time (seconds) |
+| Variant | Time (miliseconds) |
 |-------|---------------------:|
-| Naive DFT | 84.109 |
+| Naive DFT | 319.693 |
+| Radix-2 FFT (Cooley-Tukey) | 1.498 |
 
 Please refer to [this log](./bench/results/bench.md) for the full benchmark snapshot.
 

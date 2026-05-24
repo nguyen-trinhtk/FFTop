@@ -16,7 +16,8 @@ FFTTest::TestResult test_parseval_theorem(const FFTCore::FFTFunc& fft) {
             time_energy += std::norm(x);
         }
 
-        const auto freq = fft(input);
+        std::vector<FFTCore::Complex> freq;
+        fft(input, freq);
         double freq_energy = 0.0;
         for (const auto& X : freq) {
             freq_energy += std::norm(X);

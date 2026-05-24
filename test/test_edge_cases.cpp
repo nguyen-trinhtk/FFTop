@@ -7,8 +7,10 @@ FFTTest::TestResult verify_matches_reference(
     const FFTCore::FFTFunc& fft,
     const std::vector<FFTCore::Complex>& input,
     const std::string& context) {
-    const auto expected = dft(input);
-    const auto actual = fft(input);
+    std::vector<FFTCore::Complex> expected;
+    std::vector<FFTCore::Complex> actual;
+    dft(input, expected);
+    fft(input, actual);
 
     const std::string mismatch = FFTTest::find_first_mismatch(expected, actual);
     if (mismatch.empty()) {

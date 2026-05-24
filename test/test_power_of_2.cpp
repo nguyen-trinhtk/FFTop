@@ -9,8 +9,10 @@ FFTTest::TestResult test_power_of_2_sizes(const FFTCore::FFTFunc& fft) {
     for (const int exponent : exponents) {
         const int size = 1 << exponent;
         const auto input = FFTTest::generate_random_complex(size);
-        const auto expected = dft(input);
-        const auto actual = fft(input);
+        std::vector<FFTCore::Complex> expected;
+        std::vector<FFTCore::Complex> actual;
+        dft(input, expected);
+        fft(input, actual);
 
         const std::string mismatch = FFTTest::find_first_mismatch(expected, actual);
         if (mismatch.empty()) {
