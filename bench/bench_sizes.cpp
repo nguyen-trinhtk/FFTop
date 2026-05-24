@@ -3,7 +3,7 @@
 namespace {
 
 std::vector<FFTBench::BenchmarkRow> benchmark_input_sizes(const FFTCore::FFTFunc& fft) {
-    const std::vector<std::size_t> sizes = {64, /* 128, */ 256, /* 512, 1024,2048, */ 4096, /* 65536, */ /* 1048576 */};
+    const std::vector<std::size_t> sizes = {64, 256, /* 1024, */ 4096, /* 65536, */ /* 1048576 */};
     std::vector<FFTBench::BenchmarkRow> rows;
     rows.reserve(sizes.size());
 

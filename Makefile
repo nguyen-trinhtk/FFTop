@@ -19,6 +19,7 @@ BENCH_SOURCES := \
 	fft/ref/dft.cpp
 
 .PHONY: all test bench clean
+.PHONY: memcheck
 
 all: test
 
@@ -27,6 +28,10 @@ test: $(TEST_BIN)
 
 bench: $(BENCH_BIN)
 	./$(BENCH_BIN)
+
+memcheck: $(BENCH_BIN)
+	/usr/bin/time -l ./$(BENCH_BIN)
+	/usr/bin/leaks --atExit -- ./$(BENCH_BIN)
 
 $(TEST_BIN): $(TEST_SOURCES)
 	mkdir -p build
