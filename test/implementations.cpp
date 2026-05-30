@@ -2,11 +2,12 @@
 #include <fft/ref/dft.h>
 #include <fft/cpu/radix-2.cpp>
 #include <fft/cpu/radix-4.cpp>
+#include <fft/cpu/iterative.cpp>
 
 namespace {
 
 const FFTTest::ImplementationRegistrar kReferenceDft("Reference DFT", dft);
 const FFTTest::ImplementationRegistrar kRadix2("Radix-2 FFT", radix_2_fft);
 const FFTTest::ImplementationRegistrar kRadix4("Radix-4 FFT", radix_4_fft);
-
+const FFTTest::ImplementationRegistrar kIterative("Iterative In-Place FFT", fft_iterative);
 }  // namespace

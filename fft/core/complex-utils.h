@@ -1,3 +1,4 @@
+#pragma once
 #include "fft/core/types.h"
 
 namespace FFTCore {
