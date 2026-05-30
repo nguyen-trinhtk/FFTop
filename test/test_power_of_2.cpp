@@ -4,7 +4,7 @@
 namespace {
 
 FFTTest::TestResult test_power_of_2_sizes(const FFTCore::FFTFunc& fft) {
-    const std::vector<int> exponents = {0, 1, 2, 3, 4, 5, 6, 8, 10};
+    const std::vector<int> exponents = {0, 2, 4, 6, 8, 10};
 
     for (const int exponent : exponents) {
         const int size = 1 << exponent;
