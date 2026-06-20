@@ -2,7 +2,7 @@
 
 namespace {
 
-std::vector<FFTBench::BenchmarkRow> benchmark_input_sizes(const FFTCore::FFTFunc& fft) {
+std::vector<FFTBench::BenchmarkRow> benchmark_steady_state(const FFTCore::FFTFunc& fft) {
     const std::vector<std::size_t> sizes = {16777216};
     std::vector<FFTBench::BenchmarkRow> rows;
     rows.reserve(sizes.size());
@@ -15,7 +15,7 @@ std::vector<FFTBench::BenchmarkRow> benchmark_input_sizes(const FFTCore::FFTFunc
         fft(input, warmup_output);
 
         rows.push_back({
-            "Input sizes",
+            "Steady state",
             size,
             runs,
             FFTBench::benchmark_ms(fft, input, runs),
@@ -25,8 +25,8 @@ std::vector<FFTBench::BenchmarkRow> benchmark_input_sizes(const FFTCore::FFTFunc
     return rows;
 }
 
-const FFTBench::BenchmarkRegistrar kInputSizes(
-    "Input sizes",
-    benchmark_input_sizes);
+const FFTBench::BenchmarkRegistrar kSteadyState(
+    "Steady state",
+    benchmark_steady_state);
 
 }  // namespace
