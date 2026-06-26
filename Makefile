@@ -1,5 +1,11 @@
+# Override on the command line: make CXX=g++-15
+CXX ?= g++
+ifneq ($(wildcard /opt/homebrew/bin/g++-15),)
 CXX := /opt/homebrew/bin/g++-15
-CXXFLAGS := -g -O3 -march=native -std=c++17 -Wall -Wextra -I.
+endif
+
+INCLUDES := -Iinclude
+CXXFLAGS := -g -O3 -march=native -std=c++17 -Wall -Wextra $(INCLUDES)
 FFTW_CFLAGS := $(shell pkg-config --cflags fftw3 2>/dev/null)
 FFTW_LIBS := $(shell pkg-config --libs fftw3 2>/dev/null)
 ifeq ($(FFTW_LIBS),)
@@ -12,6 +18,21 @@ TEST_CXXFLAGS := $(CXXFLAGS) $(OPENMP_FLAGS)
 
 TEST_BIN := build/run_all_tests
 BENCH_BIN := build/run_all_benchmarks
+
+FFT_SOURCES := \
+	src/fft/ref/dft.cpp \
+	src/fft/cpu/detail/iterative_radix2.cpp \
+	src/fft/cpu/detail/matrix_ops.cpp \
+	src/fft/cpu/detail/simd_radix2.cpp \
+	src/fft/cpu/detail/four_step.cpp \
+	src/fft/cpu/radix-2.cpp \
+	src/fft/cpu/radix-4.cpp \
+	src/fft/cpu/iterative.cpp \
+	src/fft/cpu/simd-iter.cpp \
+	src/fft/cpu/openmp-iter.cpp \
+	src/fft/cpu/four-step.cpp \
+	src/fft/cpu/parallel-four-step.cpp
+
 TEST_SOURCES := \
 	test/run_all_tests.cpp \
 	test/utils.cpp \
@@ -19,7 +40,8 @@ TEST_SOURCES := \
 	test/test_edge_cases.cpp \
 	test/test_power_of_2.cpp \
 	test/test_properties.cpp \
-	fft/ref/dft.cpp
+	$(FFT_SOURCES)
+
 BENCH_SOURCES := \
 	bench/run_all_benchmarks.cpp \
 	bench/utils.cpp \
@@ -27,10 +49,9 @@ BENCH_SOURCES := \
 	bench/bench_sizes.cpp \
 	bench/bench_steady_state.cpp \
 	bench/fftw_wrapper.cpp \
-	fft/ref/dft.cpp
+	$(FFT_SOURCES)
 
-.PHONY: all test bench clean
-.PHONY: memcheck
+.PHONY: all test bench clean memcheck
 
 all: test
 

@@ -1,74 +1,74 @@
 # Benchmarks
-Timestamp: 26-06-14 12:42:01
+Timestamp: 26-06-26 06:42:56
 ### Radix-2 FFT
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 6658.602 |
+| Input sizes | 16777216 | 3 | 5637.589 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 5627.988 |
+| Steady state | 16777216 | 3 | 5587.797 |
 
 ### Radix-4 FFT
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 3666.496 |
+| Input sizes | 16777216 | 3 | 3587.082 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 3662.237 |
+| Steady state | 16777216 | 3 | 3588.488 |
 
 ### Iterative In-Place FFT
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 1038.184 |
+| Input sizes | 16777216 | 3 | 985.898 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 1038.356 |
+| Steady state | 16777216 | 3 | 989.117 |
 
 ### SIMD Iterative In-Place FFT
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 943.841 |
+| Input sizes | 16777216 | 3 | 846.803 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 938.455 |
+| Steady state | 16777216 | 3 | 863.770 |
 
 ### OpenMP+SIMD Iterative In-Place FFT
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 881.973 |
+| Input sizes | 16777216 | 3 | 819.264 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 881.267 |
+| Steady state | 16777216 | 3 | 819.782 |
 
 ### Four-Step FFT
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 1005.527 |
+| Input sizes | 16777216 | 3 | 952.152 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 1013.769 |
+| Steady state | 16777216 | 3 | 943.000 |
 
 ### Parallel Four-Step FFT
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 297.540 |
+| Input sizes | 16777216 | 3 | 234.724 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 300.761 |
+| Steady state | 16777216 | 3 | 248.329 |
 
 ### FFTW3 (cold)
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 417.870 |
+| Input sizes | 16777216 | 3 | 399.843 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 401.297 |
+| Steady state | 16777216 | 3 | 391.609 |
 
 ### FFTW3 (steady)
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Input sizes | 16777216 | 3 | 493.894 |
+| Input sizes | 16777216 | 3 | 261.732 |
 | Benchmark | N | Runs | Avg ms |
 |---|---:|---:|---:|
-| Steady state | 16777216 | 3 | 387.356 |
+| Steady state | 16777216 | 3 | 254.585 |
 

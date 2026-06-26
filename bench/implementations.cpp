@@ -1,14 +1,8 @@
 #include "utils.h"
 #include "fftw_wrapper.h"
 
+#include <fft/cpu/implementations.h>
 #include <fft/ref/dft.h>
-#include <fft/cpu/radix-2.cpp>
-#include <fft/cpu/radix-4.cpp>
-#include <fft/cpu/iterative.cpp>
-#include <fft/cpu/simd-iter.cpp>
-#include <fft/cpu/openmp-iter.cpp>
-#include <fft/cpu/four-step.cpp>
-#include <fft/cpu/parallel-four-step.cpp>
 
 namespace {
 // Reference DFT is O(n^2); skipped in bench at large N.
