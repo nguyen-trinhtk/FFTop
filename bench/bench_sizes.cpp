@@ -3,7 +3,15 @@
 namespace {
 
 std::vector<FFTBench::BenchmarkRow> benchmark_input_sizes(const FFTCore::FFTFunc& fft) {
-    const std::vector<std::size_t> sizes = {16777216};
+    // Mid-range sweep — locality wins show up here more than at 16M.
+    const std::vector<std::size_t> sizes = {
+        1u << 10,  // 1024
+        1u << 12,  // 4096
+        1u << 14,  // 16384
+        1u << 16,  // 65536
+        1u << 18,  // 262144
+        1u << 20,  // 1048576
+    };
     std::vector<FFTBench::BenchmarkRow> rows;
     rows.reserve(sizes.size());
 
