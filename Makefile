@@ -39,7 +39,7 @@ CPU_SOURCES := \
 	src/fft/cpu/parallel-four-step.cpp
 
 GPU_SOURCES := \
-	src/fft/gpu/detail/hierarchical.cu \
+	src/fft/gpu/detail/iterative.cu \
 	src/fft/gpu/naive.cu \
 	src/fft/gpu/shared_mem.cu \
 	src/fft/gpu/four_step.cu \

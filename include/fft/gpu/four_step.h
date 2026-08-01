@@ -4,7 +4,6 @@
 
 #include "fft/core/types.h"
 
-// Bailey six-step on device (transpose → col FFTs → transpose → twiddles →
-// row FFTs → transpose), with shared-mem leaves for factors that fit a CTA.
+// Blocked shared-tile locality path (same engine as shared-mem until Bailey returns).
 void fft_gpu_four_step(const std::vector<FFTCore::Complex>& input,
                        std::vector<FFTCore::Complex>& output);

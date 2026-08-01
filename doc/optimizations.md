@@ -27,7 +27,7 @@ Code is organized by backend, with headers under `include/fft/` and sources unde
 | CPU building blocks | `include/fft/cpu/detail/` | `src/fft/cpu/detail/` | Reusable algorithms — not registered as variants |
 | CPU variants | `include/fft/cpu/*.h` | `src/fft/cpu/*.cpp` | Thin wrappers; `test|bench/cpu_implementations.cpp` |
 | GPU variants | `include/fft/gpu/*.h` | `src/fft/gpu/*.cu` | CUDA kernels; `test|bench/gpu_implementations.cpp` |
-| GPU building blocks | `include/fft/gpu/detail/` | `src/fft/gpu/detail/` | Shared CUDA helpers + hierarchical four-step engine |
+| GPU building blocks | `include/fft/gpu/detail/` | `src/fft/gpu/detail/` | Shared CUDA helpers + iterative locality engine |
 
 Build targets are split: `make test-cpu` / `bench-cpu` vs `make test-gpu` / `bench-gpu`.
 
@@ -35,10 +35,10 @@ Build targets are split: `make test-cpu` / `bench-cpu` vs `make test-gpu` / `ben
 
 | Variant | Idea |
 |---------|------|
-| Naive | Global-memory radix-2, one kernel launch per stage |
-| Shared-Mem | `__shared__` block FFT when N fits a CTA; Stockham DIF stages for large N |
-| Four-Step | Bailey six-step (transpose / col FFTs / twiddles / row FFTs); shared-mem leaves |
-| Warp-Shuffle | Tiny FFTs in registers via `__shfl_*`; six-step with warp leaves for large N |
+| Naive | Bit-reverse + one global radix-2 kernel per stage |
+| Shared-Mem | Fuse stages `2..1024` in `__shared__` (one load/store per tile), then global |
+| Four-Step | Same shared-tile path for now (Bailey slot reserved) |
+| Warp-Shuffle | Stages `2..32` via `__shfl_*`, then shared tiles, then global |
 | cuFFT | Vendor baseline (like FFTW on CPU) |
 
 ### `fft/cpu/detail/` modules
