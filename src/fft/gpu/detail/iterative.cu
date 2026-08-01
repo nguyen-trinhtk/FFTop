@@ -166,7 +166,8 @@ void fft_iterative_locality(
 
     int stages_done_through = 1;
 
-    if (mode == LocalityMode::WarpThenShared) {
+    // WarpThenShared (optimized)
+    {
         const int warp_blocks = (N >= kWarp) ? (N / kWarp) : 1;
         warp_fused_stages_kernel<<<warp_blocks, kWarp>>>(d_data.get(), N);
         FFT_CUDA_CHECK(cudaGetLastError());
@@ -180,14 +181,6 @@ void fft_iterative_locality(
             FFT_CUDA_CHECK(cudaGetLastError());
             stages_done_through = tile;
         }
-    } else {
-        // SharedTile
-        const int tile = (N < kTile) ? N : kTile;
-        const size_t smem = static_cast<size_t>(tile) * sizeof(double2);
-        shared_fused_stages_kernel<<<N / tile, tile, smem>>>(
-            d_data.get(), tile, 2);
-        FFT_CUDA_CHECK(cudaGetLastError());
-        stages_done_through = tile;
     }
 
     const int first_global = stages_done_through << 1;

@@ -46,7 +46,18 @@ Steady-state CPU results at `N = 16777216` (see [full log](./bench/results/bench
 
 Benchmarking is done on a Silicon M3 laptop (4×4.05 GHz + 4×2.75 GHz cores, ~100 GB/s memory bandwidth).
 
-#### TODO: GPU benchmarking
+#### GPU benchmarking
+
+Compare before/after on a CUDA machine:
+
+```bash
+make test-gpu bench-gpu CUDA_ARCH=sm_75
+```
+
+| Variant | Meaning |
+|---------|---------|
+| GPU Naive (before) | One global kernel per radix-2 stage |
+| GPU Optimized (warp/shared locality) | Warp `__shfl_*` + `__shared__` tiles on early stages |
 
 ---
 

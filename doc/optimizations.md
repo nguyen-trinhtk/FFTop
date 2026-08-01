@@ -35,11 +35,10 @@ Build targets are split: `make test-cpu` / `bench-cpu` vs `make test-gpu` / `ben
 
 | Variant | Idea |
 |---------|------|
-| Naive | Bit-reverse + one global radix-2 kernel per stage |
-| Shared-Mem | Fuse stages `2..1024` in `__shared__` (one load/store per tile), then global |
-| Four-Step | Same shared-tile path for now (Bailey slot reserved) |
-| Warp-Shuffle | Stages `2..32` via `__shfl_*`, then shared tiles, then global |
-| cuFFT | Vendor baseline (like FFTW on CPU) |
+| Naive (before) | Bit-reverse + one global radix-2 kernel per stage |
+| Optimized (after) | Same FFT, with warp `__shfl_*` + `__shared__` tiles on early stages, then global |
+
+Engine: `fft/gpu/detail/iterative` (`LocalityMode::GlobalOnly` vs `WarpThenShared`).
 
 ### `fft/cpu/detail/` modules
 
