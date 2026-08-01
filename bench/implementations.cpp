@@ -4,6 +4,10 @@
 #include <fft/cpu/implementations.h>
 #include <fft/ref/dft.h>
 
+#ifdef FFT_HAS_CUDA
+#include <fft/gpu/implementations.h>
+#endif
+
 namespace {
 // Reference DFT is O(n^2); skipped in bench at large N.
 // const FFTBench::ImplementationRegistrar kReferenceDft("Reference DFT", dft);
@@ -18,4 +22,8 @@ const FFTBench::ImplementationRegistrar kParallelFourStep(
     fft_parallel_four_step);
 const FFTBench::ImplementationRegistrar kFftwCold("FFTW3 (cold)", fftw_fft_cold);
 const FFTBench::ImplementationRegistrar kFftwSteady("FFTW3 (steady)", fftw_fft_steady);
+
+#ifdef FFT_HAS_CUDA
+const FFTBench::ImplementationRegistrar kGpuNaive("GPU Naive FFT", fft_gpu_naive);
+#endif
 }  // namespace

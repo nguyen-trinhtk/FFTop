@@ -4,6 +4,10 @@ ifneq ($(wildcard /opt/homebrew/bin/g++-15),)
 CXX := /opt/homebrew/bin/g++-15
 endif
 
+NVCC ?= nvcc
+# Colab T4: sm_75. Override: make CUDA_ARCH=sm_80
+CUDA_ARCH ?= sm_75
+
 INCLUDES := -Iinclude
 CXXFLAGS := -g -O3 -march=native -std=c++17 -Wall -Wextra $(INCLUDES)
 FFTW_CFLAGS := $(shell pkg-config --cflags fftw3 2>/dev/null)
@@ -33,6 +37,9 @@ FFT_SOURCES := \
 	src/fft/cpu/four-step.cpp \
 	src/fft/cpu/parallel-four-step.cpp
 
+GPU_SOURCES := src/fft/gpu/naive.cu
+HAVE_NVCC := $(shell command -v $(NVCC) 2>/dev/null)
+
 TEST_SOURCES := \
 	test/run_all_tests.cpp \
 	test/utils.cpp \
@@ -51,7 +58,7 @@ BENCH_SOURCES := \
 	bench/fftw_wrapper.cpp \
 	$(FFT_SOURCES)
 
-.PHONY: all test bench clean memcheck
+.PHONY: all test bench test-gpu clean memcheck
 
 all: test
 
@@ -72,6 +79,23 @@ $(TEST_BIN): $(TEST_SOURCES)
 $(BENCH_BIN): $(BENCH_SOURCES)
 	mkdir -p build
 	$(CXX) $(BENCH_CXXFLAGS) $(BENCH_SOURCES) -o $(BENCH_BIN) $(FFTW_LIBS)
+
+# GPU build (requires nvcc). On Colab: make test-gpu CUDA_ARCH=sm_75
+ifeq ($(HAVE_NVCC),)
+test-gpu:
+	@echo "nvcc not found — use Google Colab (T4) or a CUDA machine."
+	@exit 1
+else
+TEST_GPU_BIN := build/run_all_tests_gpu
+test-gpu: $(TEST_GPU_BIN)
+	./$(TEST_GPU_BIN)
+
+$(TEST_GPU_BIN): $(TEST_SOURCES) $(GPU_SOURCES)
+	mkdir -p build
+	$(NVCC) -O3 -std=c++17 -arch=$(CUDA_ARCH) -DFFT_HAS_CUDA $(INCLUDES) \
+		$(TEST_SOURCES) $(GPU_SOURCES) -o $(TEST_GPU_BIN) -lcudart \
+		-Xcompiler "$(OPENMP_FLAGS)"
+endif
 
 clean:
 	rm -rf build
