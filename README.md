@@ -57,11 +57,11 @@ include/fft/
   core/         shared types, bit ops, complex utilities
   ref/          reference DFT (correctness oracle)
   cpu/          CPU public APIs + detail/
-  gpu/          GPU public APIs
+  gpu/          GPU public APIs + detail/
 src/fft/
   ref/          reference DFT implementation
   cpu/          CPU variants + detail/ building blocks
-  gpu/          CUDA kernels (.cu)
+  gpu/          CUDA kernels (.cu) + detail/
 test/
   cpu_implementations.cpp   # registered CPU variants
   gpu_implementations.cpp   # registered GPU variants

@@ -39,7 +39,12 @@ CPU_SOURCES := \
 	src/fft/cpu/parallel-four-step.cpp
 
 GPU_SOURCES := \
-	src/fft/gpu/naive.cu
+	src/fft/gpu/detail/hierarchical.cu \
+	src/fft/gpu/naive.cu \
+	src/fft/gpu/shared_mem.cu \
+	src/fft/gpu/four_step.cu \
+	src/fft/gpu/warp_shuffle.cu \
+	src/fft/gpu/cufft.cu
 
 TEST_HARNESS := \
 	test/run_all_tests.cpp \
@@ -128,12 +133,12 @@ bench-gpu: $(BENCH_GPU_BIN)
 $(TEST_GPU_BIN): $(TEST_GPU_SOURCES)
 	mkdir -p build
 	$(NVCC) -O3 -std=c++17 -arch=$(CUDA_ARCH) $(INCLUDES) \
-		$(TEST_GPU_SOURCES) -o $(TEST_GPU_BIN) -lcudart
+		$(TEST_GPU_SOURCES) -o $(TEST_GPU_BIN) -lcudart -lcufft
 
 $(BENCH_GPU_BIN): $(BENCH_GPU_SOURCES)
 	mkdir -p build
 	$(NVCC) -O3 -std=c++17 -arch=$(CUDA_ARCH) $(INCLUDES) \
-		$(BENCH_GPU_SOURCES) -o $(BENCH_GPU_BIN) -lcudart
+		$(BENCH_GPU_SOURCES) -o $(BENCH_GPU_BIN) -lcudart -lcufft
 endif
 
 clean:

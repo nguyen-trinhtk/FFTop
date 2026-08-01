@@ -27,8 +27,19 @@ Code is organized by backend, with headers under `include/fft/` and sources unde
 | CPU building blocks | `include/fft/cpu/detail/` | `src/fft/cpu/detail/` | Reusable algorithms — not registered as variants |
 | CPU variants | `include/fft/cpu/*.h` | `src/fft/cpu/*.cpp` | Thin wrappers; `test|bench/cpu_implementations.cpp` |
 | GPU variants | `include/fft/gpu/*.h` | `src/fft/gpu/*.cu` | CUDA kernels; `test|bench/gpu_implementations.cpp` |
+| GPU building blocks | `include/fft/gpu/detail/` | `src/fft/gpu/detail/` | Shared CUDA helpers + hierarchical four-step engine |
 
 Build targets are split: `make test-cpu` / `bench-cpu` vs `make test-gpu` / `bench-gpu`.
+
+### `fft/gpu/` variants
+
+| Variant | Idea |
+|---------|------|
+| Naive | Global-memory radix-2, one kernel launch per stage |
+| Shared-Mem | `__shared__` block FFT when N fits a CTA; Stockham DIF stages for large N |
+| Four-Step | Bailey six-step (transpose / col FFTs / twiddles / row FFTs); shared-mem leaves |
+| Warp-Shuffle | Tiny FFTs in registers via `__shfl_*`; six-step with warp leaves for large N |
+| cuFFT | Vendor baseline (like FFTW on CPU) |
 
 ### `fft/cpu/detail/` modules
 
