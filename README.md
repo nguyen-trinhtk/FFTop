@@ -48,16 +48,18 @@ Benchmarking is done on a Silicon M3 laptop (4×4.05 GHz + 4×2.75 GHz cores, ~1
 
 #### GPU benchmarking
 
-Compare before/after on a CUDA machine:
+Compare before/after on a CUDA machine (Colab T4):
 
 ```bash
 make test-gpu bench-gpu CUDA_ARCH=sm_75
 ```
 
-| Variant | Meaning |
-|---------|---------|
-| GPU Naive (before) | One global kernel per radix-2 stage |
-| GPU Optimized (warp/shared locality) | Warp `__shfl_*` + `__shared__` tiles on early stages |
+| Variant | N = 1024 | N = 4096 |
+|---------|---------:|---------:|
+| GPU Naive (before) | 0.438 | 0.739 |
+| GPU Optimized (warp/shared locality) | 0.244 | 0.315 |
+
+Avg ms. Optimized fuses early stages via warp `__shfl_*` + `__shared__` tiles.
 
 ---
 
