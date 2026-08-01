@@ -12,7 +12,7 @@ namespace {
 
 constexpr int kTile = 1024;
 constexpr int kWarp = 32;
-constexpr int kThreads = 256;
+constexpr int kThreads = 1024;
 
 __global__ void bit_reverse_copy_kernel(
     const double2* __restrict__ in,
