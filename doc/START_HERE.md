@@ -46,7 +46,7 @@ fft/
 
 New test: create a new test_*.cpp file and add one TestRegistrar
 
-New implementation: add one ImplementationRegistrar in implementations.cpp (line 1) or another implementation file
+New implementation: add one ImplementationRegistrar in test|bench/cpu_implementations.cpp or gpu_implementations.cpp
 
 ### Memcheck
 The most useful lines to look at are:

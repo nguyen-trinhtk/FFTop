@@ -18,13 +18,17 @@ This recursive algorithm reduces asymptotic complexity from $O(n^2)$ to $O(n \lo
 
 ## Module architecture
 
-Code is organized in three layers, with headers under `include/fft/` and sources under `src/fft/`:
+Code is organized by backend, with headers under `include/fft/` and sources under `src/fft/`:
 
 | Layer | Headers | Sources | Role |
 |-------|---------|---------|------|
 | Core | `include/fft/core/` | — | Types, bit-reversal, `log2_floor`, small math helpers |
-| Building blocks | `include/fft/cpu/detail/` | `src/fft/cpu/detail/` | Reusable algorithms — not registered as benchmark variants |
-| Public variants | `include/fft/cpu/*.h` | `src/fft/cpu/*.cpp` | Thin wrappers exposed to test/bench registries |
+| Reference | `include/fft/ref/` | `src/fft/ref/` | DFT oracle for correctness tests |
+| CPU building blocks | `include/fft/cpu/detail/` | `src/fft/cpu/detail/` | Reusable algorithms — not registered as variants |
+| CPU variants | `include/fft/cpu/*.h` | `src/fft/cpu/*.cpp` | Thin wrappers; `test|bench/cpu_implementations.cpp` |
+| GPU variants | `include/fft/gpu/*.h` | `src/fft/gpu/*.cu` | CUDA kernels; `test|bench/gpu_implementations.cpp` |
+
+Build targets are split: `make test-cpu` / `bench-cpu` vs `make test-gpu` / `bench-gpu`.
 
 ### `fft/cpu/detail/` modules
 

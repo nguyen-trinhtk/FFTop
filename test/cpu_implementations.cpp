@@ -3,10 +3,6 @@
 #include <fft/cpu/implementations.h>
 #include <fft/ref/dft.h>
 
-#ifdef FFT_HAS_CUDA
-#include <fft/gpu/implementations.h>
-#endif
-
 namespace {
 
 const FFTTest::ImplementationRegistrar kReferenceDft("Reference DFT", dft);
@@ -19,8 +15,4 @@ const FFTTest::ImplementationRegistrar kFourStep("Four-Step FFT", fft_four_step)
 const FFTTest::ImplementationRegistrar kParallelFourStep(
     "Parallel Four-Step FFT",
     fft_parallel_four_step);
-
-#ifdef FFT_HAS_CUDA
-const FFTTest::ImplementationRegistrar kGpuNaive("GPU Naive FFT", fft_gpu_naive);
-#endif
 }  // namespace

@@ -1,6 +1,6 @@
 # Optimize FFT implementation
 
-This project's primary goal is to discover & benchmark different hardware-efficient implementations of the Fast Fourier Transform algorithm, using a mix-and-match of techniques while considering the computing architecture beneath. Currently the focus is on CPU implementations.
+This project's primary goal is to discover & benchmark different hardware-efficient implementations of the Fast Fourier Transform algorithm, using a mix-and-match of techniques while considering the computing architecture beneath.
 
 Please refer to [this document](./doc/optimizations.md) to learn more about each optimization.
 
@@ -9,9 +9,14 @@ Please refer to [this document](./doc/optimizations.md) to learn more about each
 ### Getting started
 
 ```bash
-make test    # run correctness tests
-make bench   # run benchmarks (requires FFTW3)
-make clean   # remove build artifacts
+# CPU (local)
+make test-cpu    # or: make test
+make bench-cpu   # or: make bench  (requires FFTW3)
+make clean
+
+# GPU (CUDA machine / Colab T4)
+make test-gpu CUDA_ARCH=sm_75
+make bench-gpu CUDA_ARCH=sm_75
 ```
 
 Compiler flags (override with `make CXX=g++` on Linux):
@@ -26,7 +31,7 @@ On macOS with Homebrew, the Makefile auto-detects `g++-15` when present.
 
 ### Benchmarking
 
-Steady-state results at `N = 16777216` (see [full log](./bench/results/bench.md)):
+Steady-state CPU results at `N = 16777216` (see [full log](./bench/results/bench.md)):
 
 | Variant | Avg ms |
 |---------|-------:|
@@ -49,18 +54,26 @@ Benchmarking is done on a Silicon M3 laptop (4×4.05 GHz + 4×2.75 GHz cores, ~1
 
 ```
 include/fft/
-  core/         headers: types, bit ops, complex utilities
-  ref/          reference DFT declaration
-  cpu/          public variant declarations + detail/ internal headers
+  core/         shared types, bit ops, complex utilities
+  ref/          reference DFT (correctness oracle)
+  cpu/          CPU public APIs + detail/
+  gpu/          GPU public APIs
 src/fft/
   ref/          reference DFT implementation
-  cpu/          variant implementations + detail/ building blocks
-test/           correctness harness
-bench/          benchmark harness
-doc/            theory and optimization notes
+  cpu/          CPU variants + detail/ building blocks
+  gpu/          CUDA kernels (.cu)
+test/
+  cpu_implementations.cpp   # registered CPU variants
+  gpu_implementations.cpp   # registered GPU variants
+bench/
+  cpu_implementations.cpp   # CPU + FFTW bench registry
+  gpu_implementations.cpp   # GPU bench registry
+doc/
 ```
 
 Headers live under `include/`; implementations under `src/`. The Makefile passes `-Iinclude` so includes use paths like `#include "fft/cpu/iterative.h"`.
+
+CPU and GPU builds are separate binaries — `test-gpu` / `bench-gpu` do not link CPU FFT variants (DFT is linked only as the test oracle).
 
 ---
 
