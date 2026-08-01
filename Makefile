@@ -58,7 +58,7 @@ BENCH_SOURCES := \
 	bench/fftw_wrapper.cpp \
 	$(FFT_SOURCES)
 
-.PHONY: all test bench test-gpu clean memcheck
+.PHONY: all test bench test-gpu bench-gpu clean memcheck
 
 all: test
 
@@ -80,21 +80,34 @@ $(BENCH_BIN): $(BENCH_SOURCES)
 	mkdir -p build
 	$(CXX) $(BENCH_CXXFLAGS) $(BENCH_SOURCES) -o $(BENCH_BIN) $(FFTW_LIBS)
 
-# GPU build (requires nvcc). On Colab: make test-gpu CUDA_ARCH=sm_75
+# GPU builds (require nvcc). On Colab T4:
+#   !apt-get install -y libfftw3-dev
+#   !make test-gpu bench-gpu CUDA_ARCH=sm_75
 ifeq ($(HAVE_NVCC),)
-test-gpu:
+test-gpu bench-gpu:
 	@echo "nvcc not found — use Google Colab (T4) or a CUDA machine."
 	@exit 1
 else
 TEST_GPU_BIN := build/run_all_tests_gpu
+BENCH_GPU_BIN := build/run_all_benchmarks_gpu
+
 test-gpu: $(TEST_GPU_BIN)
 	./$(TEST_GPU_BIN)
+
+bench-gpu: $(BENCH_GPU_BIN)
+	./$(BENCH_GPU_BIN)
 
 $(TEST_GPU_BIN): $(TEST_SOURCES) $(GPU_SOURCES)
 	mkdir -p build
 	$(NVCC) -O3 -std=c++17 -arch=$(CUDA_ARCH) -DFFT_HAS_CUDA $(INCLUDES) \
 		$(TEST_SOURCES) $(GPU_SOURCES) -o $(TEST_GPU_BIN) -lcudart \
 		-Xcompiler "$(OPENMP_FLAGS)"
+
+$(BENCH_GPU_BIN): $(BENCH_SOURCES) $(GPU_SOURCES)
+	mkdir -p build
+	$(NVCC) -O3 -std=c++17 -arch=$(CUDA_ARCH) -DFFT_HAS_CUDA $(INCLUDES) \
+		$(FFTW_CFLAGS) $(BENCH_SOURCES) $(GPU_SOURCES) -o $(BENCH_GPU_BIN) \
+		-lcudart $(FFTW_LIBS) -Xcompiler "$(OPENMP_FLAGS)"
 endif
 
 clean:
