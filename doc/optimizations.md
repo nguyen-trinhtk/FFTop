@@ -45,11 +45,10 @@ Engine: `fft/gpu/detail/iterative` (`LocalityMode::GlobalOnly` vs `WarpThenShare
 | Module | Responsibility |
 |--------|----------------|
 | `iterative_radix2` | Scalar in-place radix-2 FFT (on-the-fly twiddles) |
-| `simd_radix2` | SIMD in-place radix-2 FFT via `simd-butterfly.h`; optional OpenMP across groups |
 | `matrix_ops` | Four-step helpers: `choose_four_step_n1`, blocked transpose, twiddle multiply |
 | `four_step` | Full four-step decomposition driven by `FourStepPolicy` |
 
-`FourStepPolicy` selects serial vs parallel transpose/twiddles, SIMD vs scalar row FFTs, and the small-N fallback threshold. New variants (e.g. serial SIMD four-step) are a one-line policy change, not a fork of the algorithm.
+`FourStepPolicy` selects serial vs parallel rows/transpose/twiddles and the small-N fallback threshold. New variants are a policy change, not a fork of the algorithm.
 
-Intentional forks kept separate for benchmarking: recursive radix-2/4 (`radix-2.cpp`, `radix-4.cpp`) vs iterative paths; scalar on-the-fly twiddles vs precomputed SIMD twiddles.
+Intentional forks kept separate for benchmarking: recursive radix-2/4 (`radix-2.cpp`, `radix-4.cpp`) vs iterative paths; serial vs OpenMP execution.
 

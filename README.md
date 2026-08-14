@@ -4,6 +4,8 @@ This project's primary goal is to discover & benchmark different hardware-effici
 
 Please refer to [this document](./doc/optimizations.md) to learn more about each optimization.
 
+
+
 ---
 
 ### Getting started
@@ -38,8 +40,7 @@ Steady-state CPU results at `N = 16777216` (see [full log](./bench/results/bench
 | Radix-2 FFT | 5628 |
 | Radix-4 FFT | 3662 |
 | Iterative In-Place FFT | 1038 |
-| SIMD Iterative In-Place FFT | 938 |
-| OpenMP+SIMD Iterative In-Place FFT | 881 |
+| OpenMP Iterative In-Place FFT | 881 |
 | Four-Step FFT | 1014 |
 | Parallel Four-Step FFT | 301 |
 | FFTW3 (steady) | 387 |
@@ -62,6 +63,7 @@ make test-gpu bench-gpu CUDA_ARCH=sm_75
 Avg ms. Optimized fuses early stages via warp `__shfl_*` + `__shared__` tiles.
 
 ---
+Benchmarking is done on NVIDA Tesla T4 GPU on Google Colab. Unfortunately, I do not own a dedicated GPU for running these.
 
 ### Project layout
 

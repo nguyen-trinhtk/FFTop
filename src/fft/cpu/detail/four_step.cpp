@@ -2,7 +2,6 @@
 
 #include "fft/cpu/detail/iterative_radix2.h"
 #include "fft/cpu/detail/matrix_ops.h"
-#include "fft/cpu/detail/simd_radix2.h"
 #include "fft/core/bitops.h"
 #include "fft/core/types.h"
 
@@ -16,8 +15,7 @@ namespace {
 void fft_row_inplace(
     std::vector<FFTCore::Complex>& data,
     const std::size_t offset,
-    const std::size_t row_length,
-    const FourStepPolicy& policy) {
+    const std::size_t row_length) {
     if (row_length <= 1) {
         return;
     }
@@ -27,11 +25,7 @@ void fft_row_inplace(
         row[i] = data[offset + i];
     }
 
-    if (policy.use_simd) {
-        simd_radix2_inplace(row, false);
-    } else {
-        iterative_radix2_inplace(row);
-    }
+    iterative_radix2_inplace(row);
 
     for (std::size_t i = 0; i < row_length; ++i) {
         data[offset + i] = row[i];
@@ -50,24 +44,19 @@ void run_row_ffts(
             fft_row_inplace(
                 data,
                 static_cast<std::size_t>(row) * row_length,
-                row_length,
-                policy);
+                row_length);
         }
         return;
     }
 #endif
 
     for (std::size_t row = 0; row < row_count; ++row) {
-        fft_row_inplace(data, row * row_length, row_length, policy);
+        fft_row_inplace(data, row * row_length, row_length);
     }
 }
 
 void small_n_fallback(std::vector<FFTCore::Complex>& data, const FourStepPolicy& policy) {
-    if (policy.use_simd) {
-        simd_radix2_inplace(data, policy.parallel_rows);
-    } else {
-        iterative_radix2_inplace(data);
-    }
+    iterative_radix2_inplace(data, policy.parallel_rows);
 }
 
 }  // namespace

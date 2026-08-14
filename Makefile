@@ -28,12 +28,10 @@ REF_SOURCES := src/fft/ref/dft.cpp
 CPU_SOURCES := \
 	src/fft/cpu/detail/iterative_radix2.cpp \
 	src/fft/cpu/detail/matrix_ops.cpp \
-	src/fft/cpu/detail/simd_radix2.cpp \
 	src/fft/cpu/detail/four_step.cpp \
 	src/fft/cpu/radix-2.cpp \
 	src/fft/cpu/radix-4.cpp \
 	src/fft/cpu/iterative.cpp \
-	src/fft/cpu/simd-iter.cpp \
 	src/fft/cpu/openmp-iter.cpp \
 	src/fft/cpu/four-step.cpp \
 	src/fft/cpu/parallel-four-step.cpp

@@ -10,8 +10,7 @@ namespace {
 const FFTBench::ImplementationRegistrar kRadix2("Radix-2 FFT", radix_2_fft);
 const FFTBench::ImplementationRegistrar kRadix4("Radix-4 FFT", radix_4_fft);
 const FFTBench::ImplementationRegistrar kIterative("Iterative In-Place FFT", fft_iterative);
-const FFTBench::ImplementationRegistrar kSimdIter("SIMD Iterative In-Place FFT", fft_simd_iterative);
-const FFTBench::ImplementationRegistrar kOpenmpIter("OpenMP+SIMD Iterative In-Place FFT", fft_openmp_iterative);
+const FFTBench::ImplementationRegistrar kOpenmpIter("OpenMP Iterative In-Place FFT", fft_openmp_iterative);
 const FFTBench::ImplementationRegistrar kFourStep("Four-Step FFT", fft_four_step);
 const FFTBench::ImplementationRegistrar kParallelFourStep(
     "Parallel Four-Step FFT",

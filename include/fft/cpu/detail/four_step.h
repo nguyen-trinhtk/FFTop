@@ -16,19 +16,17 @@ struct FourStepPolicy {
     bool parallel_rows = false;
     bool parallel_transpose = false;
     bool parallel_twiddles = false;
-    bool use_simd = false;
 };
 
 inline FourStepPolicy serial_four_step_policy() {
     return FourStepPolicy{};
 }
 
-inline FourStepPolicy parallel_simd_four_step_policy() {
+inline FourStepPolicy parallel_four_step_policy() {
     FourStepPolicy policy;
     policy.parallel_rows = true;
     policy.parallel_transpose = true;
     policy.parallel_twiddles = true;
-    policy.use_simd = true;
     return policy;
 }
 

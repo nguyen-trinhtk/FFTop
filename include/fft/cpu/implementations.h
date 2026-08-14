@@ -7,4 +7,3 @@
 #include "fft/cpu/parallel-four-step.h"
 #include "fft/cpu/radix-2.h"
 #include "fft/cpu/radix-4.h"
-#include "fft/cpu/simd-iter.h"

@@ -5,7 +5,7 @@ Personal (git-ignored) notes during implementation
 
 ### Roadmap
 
-DFT -> Radix-2 FFT -> Radix-4 FFT -> Iterative in-place & bit reversal -> Four step Bailey FFT -> SIMD vectorized (AVX2/NEON) FFT -> OpenMP parallel FFT -> GPU-CUDA / OpenCL shared mem, warp butterfly -> cuFFT -> Warp-shuffle micro-FFT (register, no share mem)
+DFT -> Radix-2 FFT -> Radix-4 FFT -> Iterative in-place & bit reversal -> Four step Bailey FFT -> OpenMP parallel FFT -> GPU-CUDA / OpenCL shared mem, warp butterfly -> cuFFT -> Warp-shuffle micro-FFT (register, no share mem)
 
 ### Repo struct
 
@@ -22,9 +22,7 @@ fft/
 ├── cpu/
 │   ├── radix2.cpp        # Each variant is a self-contained file
 │   ├── radix4.cpp
-│   ├── split_radix.cpp
-│   └── simd/
-│       └── avx2.cpp
+│   └── split_radix.cpp
 │
 ├── gpu/
 │   ├── naive.cu
