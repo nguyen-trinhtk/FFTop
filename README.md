@@ -60,10 +60,11 @@ make test-gpu bench-gpu CUDA_ARCH=sm_75
 | GPU Naive (before) | 0.438 | 0.739 |
 | GPU Optimized (warp/shared locality) | 0.244 | 0.315 |
 
-Avg ms. Optimized fuses early stages via warp `__shfl_*` + `__shared__` tiles.
+(Avg ms. Optimized fuses early stages via warp `__shfl_*` + `__shared__` tiles.)
+
+Benchmarking is done on NVIDA Tesla T4 GPU on Google Colab. Unfortunately, I do not own a dedicated GPU for running these.
 
 ---
-Benchmarking is done on NVIDA Tesla T4 GPU on Google Colab. Unfortunately, I do not own a dedicated GPU for running these.
 
 ### Project layout
 
