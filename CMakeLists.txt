@@ -28,6 +28,11 @@ target_include_directories(fftop
 
 option(FFTOP_BUILD_TESTS "Build unit tests" ON)
 option(FFTOP_BUILD_BENCH "Build benchmarks" ON)
+option(FFTOP_ENABLE_CUDA "Enable CUDA GPU backend" OFF)
+
+if(FFTOP_ENABLE_CUDA)
+    target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_CUDA)
+endif()
 
 if(FFTOP_BUILD_TESTS)
     enable_testing()

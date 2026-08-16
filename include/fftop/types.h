@@ -13,7 +13,7 @@ enum class Backend   { Auto, CPU, GPU };
 enum class Direction { Forward, Inverse };
 
 struct FFTOptions {
-    Backend   backend   = Backend::Auto;
+    Backend backend   = Backend::Auto;
     Direction direction = Direction::Forward;
 };
 

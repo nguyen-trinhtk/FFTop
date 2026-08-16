@@ -8,7 +8,7 @@ struct SystemConfig {
     std::size_t cpu_threads       = 1;
     bool has_gpu           = false;
     bool enable_parallelism = true;
-    // TODO: SIMD type, cache size, memory bandwidth, gflops, etc.
+    // TODO: SIMD type, cache size etc.
 };
 
 SystemConfig detect_system_config();
