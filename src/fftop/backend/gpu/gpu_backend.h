@@ -10,5 +10,4 @@ class GPUBackend : public IBackend {
 public:
     bool is_available() const override;
 };
-
 }  // namespace FFTop

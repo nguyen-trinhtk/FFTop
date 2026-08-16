@@ -12,7 +12,7 @@ add_library(fftop STATIC
     src/fftop/backend/gpu/gpu_backend.cpp
     src/fftop/backend/gpu/naive.cpp
     src/fftop/system/config.cpp
-    src/fftop/main/fft.cpp
+    src/fftop/fft.cpp
     src/fftop/plan/cache.cpp
     src/fftop/plan/planner.cpp
 )
@@ -21,5 +21,19 @@ add_library(fftop::fftop ALIAS fftop)
 
 target_include_directories(fftop
     PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+option(FFTOP_BUILD_TESTS "Build unit tests" ON)
+option(FFTOP_BUILD_BENCH "Build benchmarks" ON)
+
+if(FFTOP_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+if(FFTOP_BUILD_BENCH)
+    add_subdirectory(bench)
+endif()
