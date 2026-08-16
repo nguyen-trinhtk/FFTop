@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fftop/main/types.h"
+#include "fftop/types.h"
 
 namespace FFTop::CPU {
 void radix2(const Buffer& input, Buffer& output);
