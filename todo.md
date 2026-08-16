@@ -1,10 +1,5 @@
-### High level UML
-         hardware config
-                |
-                v
-Interface -> planner -> executor
-### V1 Repo Struct
-do not split include & src... dump both headers and cpp into src and use cmake include
+
+### V1 Repo Structdo not split include & src... dump both headers and cpp into src and use cmake include
 - interface
 - planner: planners, plan, cache
 - cpu: 
@@ -18,7 +13,6 @@ do not split include & src... dump both headers and cpp into src and use cmake i
 
 
 # TODO
-- Test scripts + benchmark scripts
 - Generalized N
 - Four-step N1 x N2 planning
 - Tiling planning later

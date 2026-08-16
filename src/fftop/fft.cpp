@@ -20,7 +20,7 @@ SystemConfig& default_system() {
 Buffer fft(const Buffer& input, const FFTOptions& options) {
     SystemConfig& sys = default_system();
     Planner planner(sys, &default_cache());
-    const FFTPlan plan    = planner.make_plan(input.size(), options);
+    const FFTPlan plan = planner.make_plan(input.size(), options);
     auto backend = make_backend(plan, sys);
     Buffer output;
     backend->execute(plan, input, output);
