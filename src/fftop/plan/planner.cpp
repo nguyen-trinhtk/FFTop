@@ -12,12 +12,16 @@ FFTPlan Planner::make_plan(std::size_t size, const FFTOptions& options) {
         }
     }
     FFTPlan plan;
-    plan.size  = size;
+    plan.size      = size;
     plan.backend   = (options.backend == Backend::Auto)
                          ? (this->system_.has_gpu ? Backend::GPU : Backend::CPU)
                          : options.backend;
     plan.direction = options.direction;
-    plan.parallel  = this->system_.enable_parallelism && this->system_.cpu_threads > 1;
+    plan.radix     = RadixPolicy::Radix2;       // TODO: prefer Radix4 when size is a power of 4
+    plan.traversal = Traversal::Iterative;      // TODO: expose via FFTOptions if needed
+    plan.execution = (this->system_.enable_parallelism && this->system_.cpu_threads > 1)
+                         ? Execution::Parallel
+                         : Execution::Serial;
     if (this->cache_) {
         this->cache_->store(plan);
     }
