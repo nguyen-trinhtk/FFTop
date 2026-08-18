@@ -1,5 +1,6 @@
 
-### V1 Repo Structdo not split include & src... dump both headers and cpp into src and use cmake include
+### V1 Repo Struct
+do not split include & src... dump both headers and cpp into src and use cmake include
 - interface
 - planner: planners, plan, cache
 - cpu: 
@@ -19,3 +20,4 @@
 - In-place support: FFT(vec) instead of out = FFT(in)
 - Optimize CUDA
 - Technically if we do radix-2 and radix-3 then we can do everything.
+- NUMA aware

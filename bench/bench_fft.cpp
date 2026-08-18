@@ -1,4 +1,4 @@
-#include "fftop/backend/cpu/cpu.h"
+#include "fftop/backend/backend_registry.h"
 #include "fftop/plan/plan.h"
 #include "fftop/types.h"
 
@@ -25,11 +25,11 @@ void bench(FFTop::IBackend& backend, const FFTop::FFTPlan& plan) {
 }  // namespace
 
 int main() {
-    FFTop::CPUBackend cpu;
     for (std::size_t n = 64; n <= 1024; n *= 2) {
         FFTop::FFTPlan plan;
         plan.size    = n;
         plan.backend = FFTop::Backend::CPU;
-        bench(cpu, plan);
+        auto cpu = FFTop::make_cpu_backend(plan);
+        bench(*cpu, plan);
     }
 }
