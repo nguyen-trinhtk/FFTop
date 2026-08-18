@@ -20,6 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install OpenMP (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libomp
+
       - name: Configure (CMake)
         run: >
           cmake -B build
