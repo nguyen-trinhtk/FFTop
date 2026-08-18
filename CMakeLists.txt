@@ -9,7 +9,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(fftop STATIC
     src/fftop/backend/cpu/cpu.cpp
     src/fftop/backend/cpu/butterfly.cpp
-    src/fftop/backend/cpu/simd/radix2_scalar.cpp
     src/fftop/backend/cpu/traversal_strategy.cpp
     src/fftop/backend/gpu/gpu_backend.cpp
     src/fftop/backend/gpu/naive.cpp
@@ -57,18 +56,16 @@ if(FFTOP_ENABLE_OPENMP)
 endif()
 
 if(FFTOP_ENABLE_NEON)
-    target_sources(fftop PRIVATE src/fftop/backend/cpu/simd/radix2_neon.cpp)
     target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_NEON)
 endif()
 
 if(FFTOP_ENABLE_AVX2)
-    target_sources(fftop PRIVATE src/fftop/backend/cpu/simd/radix2_avx2.cpp)
     target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_AVX2)
     if(MSVC)
-        set_source_files_properties(src/fftop/backend/cpu/simd/radix2_avx2.cpp PROPERTIES
+        set_source_files_properties(src/fftop/backend/cpu/butterfly.cpp PROPERTIES
             COMPILE_OPTIONS "/arch:AVX2")
     else()
-        set_source_files_properties(src/fftop/backend/cpu/simd/radix2_avx2.cpp PROPERTIES
+        set_source_files_properties(src/fftop/backend/cpu/butterfly.cpp PROPERTIES
             COMPILE_OPTIONS "-mavx2;-mfma")
     endif()
 endif()
