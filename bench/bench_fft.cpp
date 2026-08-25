@@ -19,17 +19,23 @@ void bench(FFTop::IBackend& backend, const FFTop::FFTPlan& plan) {
 
     const double ms =
         std::chrono::duration<double, std::milli>(t1 - t0).count() / repeats;
-    std::cout << backend.name() << ',' << plan.size << ',' << ms << '\n';
+    const int radix = plan.radix == FFTop::RadixPolicy::Radix4 ? 4 : 2;
+    std::cout << backend.name() << ',' << radix << ',' << plan.size << ',' << ms << '\n';
 }
 
 }  // namespace
 
 int main() {
-    for (std::size_t n = 64; n <= 1024; n *= 2) {
-        FFTop::FFTPlan plan;
-        plan.size    = n;
-        plan.backend = FFTop::Backend::CPU;
-        auto cpu = FFTop::make_cpu_backend(plan);
-        bench(*cpu, plan);
+    std::cout << "backend,radix,size,ms\n";
+    // Powers of four, the sizes both radices can tile, so the two are comparable.
+    for (std::size_t n = 64; n <= 4096; n *= 4) {
+        for (FFTop::RadixPolicy radix : {FFTop::RadixPolicy::Radix2, FFTop::RadixPolicy::Radix4}) {
+            FFTop::FFTPlan plan;
+            plan.size    = n;
+            plan.backend = FFTop::Backend::CPU;
+            plan.radix   = radix;
+            auto cpu = FFTop::make_cpu_backend(plan);
+            bench(*cpu, plan);
+        }
     }
 }

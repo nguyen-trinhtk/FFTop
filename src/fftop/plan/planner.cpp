@@ -1,5 +1,7 @@
 #include "fftop/plan/planner.h"
 
+#include "fftop/math/integer.h"
+
 namespace FFTop {
 
 Planner::Planner(SystemConfig system, PlanCache* cache)
@@ -17,7 +19,8 @@ FFTPlan Planner::make_plan(std::size_t size, const FFTOptions& options) {
                          ? (this->system_.has_gpu ? Backend::GPU : Backend::CPU)
                          : options.backend;
     plan.direction = options.direction;
-    plan.radix     = RadixPolicy::Radix2;       // TODO: prefer Radix4 when size is a power of 4
+    // Radix-4 halves the number of stages; it only tiles sizes that are 4^p.
+    plan.radix     = is_power_of(size, 4) ? RadixPolicy::Radix4 : RadixPolicy::Radix2;
     plan.traversal = Traversal::Iterative;      // TODO: expose via FFTOptions if needed
     plan.execution = (this->system_.enable_parallelism && this->system_.cpu_threads > 1)
                          ? Execution::Parallel

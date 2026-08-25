@@ -38,4 +38,10 @@ inline Pack mul_j(Pack z) {
     const Pack nps     = {-1.0, 1.0};
     return vmulq_f64(swapped, nps);
 }
+
+inline Pack mul_minus_j(Pack z) {
+    const Pack swapped = vextq_f64(z, z, 1);
+    const Pack pns     = {1.0, -1.0};
+    return vmulq_f64(swapped, pns);
+}
 }  // namespace FFTop::CPU::ISA

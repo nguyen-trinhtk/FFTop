@@ -14,7 +14,7 @@ inline std::unique_ptr<CPUBackend> make_cpu_backend(const FFTPlan& plan) {
     auto butterfly = [&]() -> std::unique_ptr<CPU::IRadixB> {
         if (plan.radix == RadixPolicy::Radix4)
             return std::make_unique<CPU::Radix4>();
-        return std::make_unique<CPU::Radix2>();
+        return std::make_unique<CPU::Radix2>();  // Radix3/MixedRadix not implemented
     }();
 
     auto traversal_strategy = [&]() -> std::unique_ptr<CPU::ITraversalStrategy> {
