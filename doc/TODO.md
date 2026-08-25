@@ -21,3 +21,5 @@ do not split include & src... dump both headers and cpp into src and use cmake i
 - Optimize CUDA
 - Technically if we do radix-2 and radix-3 then we can do everything.
 - NUMA aware
+
+- Cache network construction butterflies???

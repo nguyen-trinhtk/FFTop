@@ -32,4 +32,8 @@ inline Pack cmul(Pack a, Pack b) {
 inline Pack mul_j(Pack z) {
     return _mm_xor_pd(_mm_shuffle_pd(z, z, 0x1), setc(-0.0, 0.0));
 }
+
+inline Pack mul_minus_j(Pack z) {
+    return _mm_xor_pd(_mm_shuffle_pd(z, z, 0x1), setc(0.0, -0.0));
+}
 }  // namespace FFTop::CPU::ISA

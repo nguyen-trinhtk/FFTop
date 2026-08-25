@@ -36,6 +36,5 @@ jobs:
 
       - name: Test
         working-directory: build
-        # Tests are expected to fail (in progress)
-        continue-on-error: true # TODO: remove once tests pass consistently
+        continue-on-error: false
         run: ctest --output-on-failure --timeout 60
