@@ -54,6 +54,13 @@ inline std::unique_ptr<CooleyTukeyGPUBackend> make_cooley_tukey_gpu(const FFTPla
         std::move(radix),
         std::make_unique<GPU::IterativeGPUTraversalStrategy>());
 }
+
+// Stockham variant: no bit-reversal permute, radix-2 only for now.
+inline std::unique_ptr<CooleyTukeyGPUBackend> make_stockham_gpu() {
+    return std::make_unique<CooleyTukeyGPUBackend>(
+        std::make_unique<GPU::GPURadix2>(),
+        std::make_unique<GPU::StockhamGPUTraversalStrategy>());
+}
 #endif
 
 inline std::unique_ptr<IBackend> make_backend(const FFTPlan& plan) {
@@ -74,7 +81,8 @@ inline std::vector<std::unique_ptr<IBackend>> all_backends() {
     out.push_back(make_cpu_backend(FFTPlan{}));
     out.push_back(std::make_unique<NaiveGPUBackend>());  // O(N²) DFT reference
 #if defined(FFTOP_ENABLE_CUDA)
-    out.push_back(make_cooley_tukey_gpu(FFTPlan{}));     // O(N log N) FFT
+    out.push_back(make_cooley_tukey_gpu(FFTPlan{}));     // iterative DIT FFT
+    out.push_back(make_stockham_gpu());                  // Stockham auto-sort FFT
 #endif
     return out;
 }
