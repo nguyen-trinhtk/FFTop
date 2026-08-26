@@ -13,7 +13,8 @@ struct SystemConfig {
     Simd        simd        = Simd::Scalar;
     Simd        kernel_simd = Simd::Scalar;
     bool        openmp      = false;
-    bool        nvidia_gpu  = false;
+    bool        nvidia_gpu  = false;  // hardware seen (runtime or nvidia-smi)
+    bool        cuda        = false;  // CUDA backend compiled in and a device is present
 };
 
 inline const char* to_string(Simd simd) {

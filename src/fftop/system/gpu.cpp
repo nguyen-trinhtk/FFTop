@@ -9,11 +9,17 @@
 
 namespace FFTop {
 
-bool detect_nvidia_gpu() {
+bool detect_cuda() {
 #if defined(FFTOP_ENABLE_CUDA)
     int n = 0;
-    if (cudaGetDeviceCount(&n) == cudaSuccess && n > 0) return true;
+    return cudaGetDeviceCount(&n) == cudaSuccess && n > 0;
+#else
+    return false;
 #endif
+}
+
+bool detect_nvidia_gpu() {
+    if (detect_cuda()) return true;
 
 #if defined(_WIN32)
     FILE* pipe = _popen("nvidia-smi -L 2>NUL", "r");

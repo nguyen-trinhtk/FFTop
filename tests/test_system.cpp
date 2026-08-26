@@ -28,4 +28,5 @@ TEST(System, DetectsHost) {
     EXPECT_NE(text.find("simd:"), std::string::npos);
     EXPECT_NE(text.find("openmp:"), std::string::npos);
     EXPECT_NE(text.find("nvidia:"), std::string::npos);
+    EXPECT_NE(text.find("cuda:"), std::string::npos);
 }

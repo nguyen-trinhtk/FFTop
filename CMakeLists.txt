@@ -36,7 +36,7 @@ target_include_directories(fftop
 
 option(FFTOP_BUILD_TESTS "Build unit tests" ON)
 option(FFTOP_BUILD_BENCH "Build benchmarks" ON)
-option(FFTOP_ENABLE_CUDA "Enable CUDA GPU backend" OFF)
+option(FFTOP_ENABLE_CUDA "Enable CUDA GPU backend if a CUDA compiler is found" ON)
 option(FFTOP_ENABLE_OPENMP "Enable OpenMP parallelism" ON)
 
 if(FFTOP_ENABLE_OPENMP)
@@ -69,23 +69,32 @@ if(MSVC)
 endif()
 
 if(FFTOP_ENABLE_CUDA)
-    if(NOT CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 75)
-    endif()
-    enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
+    include(CheckLanguage)
+    check_language(CUDA)
+    if(CMAKE_CUDA_COMPILER)
+        if(NOT CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES 75)
+        endif()
+        enable_language(CUDA)
+        find_package(CUDAToolkit REQUIRED)
 
-    target_sources(fftop PRIVATE
-        src/fftop/backend/gpu/naive.cu
-        src/fftop/backend/gpu/gpu_fft.cu
-    )
-    target_link_libraries(fftop PUBLIC CUDA::cudart)
-    target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_CUDA)
-    set_target_properties(fftop PROPERTIES
-        CUDA_STANDARD 17
-        CUDA_STANDARD_REQUIRED ON
-        CUDA_EXTENSIONS OFF
-    )
+        target_sources(fftop PRIVATE
+            src/fftop/backend/gpu/naive.cu
+            src/fftop/backend/gpu/gpu_fft.cu
+        )
+        target_link_libraries(fftop PUBLIC CUDA::cudart)
+        target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_CUDA)
+        set_target_properties(fftop PROPERTIES
+            CUDA_STANDARD 17
+            CUDA_STANDARD_REQUIRED ON
+            CUDA_EXTENSIONS OFF
+        )
+        message(STATUS "FFTop: CUDA GPU backend enabled")
+    else()
+        message(STATUS "FFTop: CUDA compiler not found; building CPU-only")
+        set(FFTOP_ENABLE_CUDA OFF CACHE BOOL
+            "Enable CUDA GPU backend if a CUDA compiler is found" FORCE)
+    endif()
 endif()
 
 if(FFTOP_BUILD_TESTS)

@@ -28,6 +28,7 @@ SystemConfig detect_system_config() {
     cfg.kernel_simd = select_kernel(cfg.simd);
     cfg.openmp      = detect_openmp();
     cfg.nvidia_gpu  = detect_nvidia_gpu();
+    cfg.cuda        = detect_cuda();
     return cfg;
 }
 
@@ -42,7 +43,8 @@ std::string describe_system(const SystemConfig& cfg) {
         << "simd:    " << to_string(cfg.simd)
         << "  (kernels: " << to_string(cfg.kernel_simd) << ")\n"
         << "openmp:  " << (cfg.openmp ? "yes" : "no") << '\n'
-        << "nvidia:  " << (cfg.nvidia_gpu ? "yes" : "no") << '\n';
+        << "nvidia:  " << (cfg.nvidia_gpu ? "yes" : "no") << '\n'
+        << "cuda:    " << (cfg.cuda ? "yes" : "no") << '\n';
     return out.str();
 }
 
