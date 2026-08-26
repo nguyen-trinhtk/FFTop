@@ -1,4 +1,3 @@
-# BIG CODE REVIEW THIS SATURDAY, BLOCK 3 HOURS PLEASE
 - all: 
   + radix-B
   + generalized N
@@ -8,6 +7,9 @@
 
   + benchmark to cache plan???
   + maybe let user do a warmup discovery before needing to run any fft
+  - In-place support: FFT(vec) instead of out = FFT(in)
+  - Technically if we do radix-2 and radix-3 then we can do everything.
+  - Cache network construction butterflies???
 
 - cpu: 
   + add sse2 for full compatibility, avx, (avx512 later)
@@ -24,12 +26,3 @@
   
   + lower-precision modes
   + stage fusion
-
-
-# TODO
-- Generalized N
-- Four-step N1 x N2 planning
-- In-place support: FFT(vec) instead of out = FFT(in)
-- Technically if we do radix-2 and radix-3 then we can do everything.
-- NUMA aware
-- Cache network construction butterflies???

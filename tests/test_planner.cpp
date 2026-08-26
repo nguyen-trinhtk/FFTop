@@ -18,3 +18,18 @@ TEST(Planner, ParallelOnlyWithOpenMp) {
     sys.openmp = true;
     EXPECT_EQ(Planner(sys).make_plan(16, {}).execution, Execution::Parallel);
 }
+
+TEST(Planner, AutoPicksGpuWhenCudaIsUsable) {
+    SystemConfig sys;
+    sys.cuda = true;
+    EXPECT_EQ(Planner(sys).make_plan(16, {}).backend, Backend::GPU);
+    EXPECT_EQ(Planner(sys).make_plan(16, {Backend::CPU, Direction::Forward}).backend,
+              Backend::CPU);
+}
+
+TEST(Planner, AutoStaysOnCpuWithoutCuda) {
+    SystemConfig sys;
+    sys.nvidia_gpu = true;
+    sys.cuda = false;
+    EXPECT_EQ(Planner(sys).make_plan(16, {}).backend, Backend::CPU);
+}

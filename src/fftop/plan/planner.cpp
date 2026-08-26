@@ -15,7 +15,9 @@ FFTPlan Planner::make_plan(std::size_t size, const FFTOptions& options) {
     }
     FFTPlan plan;
     plan.size      = size;
-    plan.backend   = (options.backend == Backend::Auto) ? Backend::CPU : options.backend;
+    plan.backend   = (options.backend == Backend::Auto)
+                         ? (this->system_.cuda ? Backend::GPU : Backend::CPU)
+                         : options.backend;
     plan.direction = options.direction;
     // Radix-4 halves the number of stages; it only tiles sizes that are 4^p.
     plan.radix     = is_power_of(size, 4) ? RadixPolicy::Radix4 : RadixPolicy::Radix2;
