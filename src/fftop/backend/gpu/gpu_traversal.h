@@ -30,4 +30,13 @@ public:
              const IGPURadix& radix) const override;
 };
 
+// Out-of-place Stockham auto-sort FFT.
+// Ping-pongs between d_data and an internal scratch buffer; no bit-reversal
+// permute needed.  Currently radix-2 only.
+class StockhamGPUTraversalStrategy final : public IGPUTraversalStrategy {
+public:
+    void run(Complex* d_data, std::size_t n, Direction dir,
+             const IGPURadix& radix) const override;
+};
+
 }  // namespace FFTop::GPU
