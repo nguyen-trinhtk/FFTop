@@ -3,18 +3,18 @@
 #include "fftop/backend/cpu/cpu.h"
 #include "fftop/backend/gpu/naive.h"
 #include "fftop/plan/plan.h"
-#include "fftop/system/config.h"
+#include "fftop/system.h"
 
 #include <memory>
 #include <vector>
 
 namespace FFTop {
 
-inline std::unique_ptr<CPUBackend> make_cpu_backend(const FFTPlan& plan) {
+inline std::unique_ptr<CPUBackend> make_cpu_backend(const FFTPlan& plan, Simd simd) {
     auto butterfly = [&]() -> std::unique_ptr<CPU::IRadixB> {
         if (plan.radix == RadixPolicy::Radix4)
-            return std::make_unique<CPU::Radix4>();
-        return std::make_unique<CPU::Radix2>();  // Radix3/MixedRadix not implemented
+            return std::make_unique<CPU::Radix4>(simd);
+        return std::make_unique<CPU::Radix2>(simd);  // Radix3/MixedRadix not implemented
     }();
 
     auto traversal_strategy = [&]() -> std::unique_ptr<CPU::ITraversalStrategy> {
@@ -33,8 +33,12 @@ inline std::unique_ptr<CPUBackend> make_cpu_backend(const FFTPlan& plan) {
         std::move(butterfly), std::move(traversal_strategy), std::move(execution_mode));
 }
 
-inline std::unique_ptr<IBackend> make_backend(const FFTPlan& plan, const SystemConfig& sys) {
-    if (plan.backend == Backend::GPU || (plan.backend == Backend::Auto && sys.has_gpu)) {
+inline std::unique_ptr<CPUBackend> make_cpu_backend(const FFTPlan& plan) {
+    return make_cpu_backend(plan, system_config().kernel_simd);
+}
+
+inline std::unique_ptr<IBackend> make_backend(const FFTPlan& plan) {
+    if (plan.backend == Backend::GPU) {
         auto gpu = std::make_unique<NaiveGPUBackend>();
         if (gpu->is_available()) return gpu;
     }
