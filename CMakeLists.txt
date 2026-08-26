@@ -9,10 +9,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(fftop STATIC
     src/fftop/backend/cpu/cpu.cpp
     src/fftop/backend/cpu/butterfly.cpp
+    src/fftop/backend/cpu/simd/kernel_scalar.cpp
+    src/fftop/backend/cpu/simd/kernel_avx2.cpp
+    src/fftop/backend/cpu/simd/kernel_neon.cpp
     src/fftop/backend/cpu/traversal_strategy.cpp
     src/fftop/backend/gpu/gpu_backend.cpp
     src/fftop/backend/gpu/naive.cpp
     src/fftop/system/config.cpp
+    src/fftop/system/cpu.cpp
+    src/fftop/system/gpu.cpp
+    src/fftop/system/openmp.cpp
     src/fftop/fft.cpp
     src/fftop/plan/cache.cpp
     src/fftop/plan/planner.cpp
@@ -31,16 +37,6 @@ option(FFTOP_BUILD_TESTS "Build unit tests" ON)
 option(FFTOP_BUILD_BENCH "Build benchmarks" ON)
 option(FFTOP_ENABLE_CUDA "Enable CUDA GPU backend" OFF)
 option(FFTOP_ENABLE_OPENMP "Enable OpenMP parallelism" ON)
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64|ARM64")
-    option(FFTOP_ENABLE_NEON "Enable NEON SIMD kernels" ON)
-else()
-    option(FFTOP_ENABLE_NEON "Enable NEON SIMD kernels" OFF)
-endif()
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64|i.86")
-    option(FFTOP_ENABLE_AVX2 "Enable AVX2 SIMD kernels" ON)
-else()
-    option(FFTOP_ENABLE_AVX2 "Enable AVX2 SIMD kernels" OFF)
-endif()
 
 if(FFTOP_ENABLE_OPENMP)
     # AppleClang has no bundled OpenMP; use Homebrew libomp when present.
@@ -66,19 +62,9 @@ if(FFTOP_ENABLE_OPENMP)
     endif()
 endif()
 
-if(FFTOP_ENABLE_NEON)
-    target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_NEON)
-endif()
-
-if(FFTOP_ENABLE_AVX2)
-    target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_AVX2)
-    if(MSVC)
-        set_source_files_properties(src/fftop/backend/cpu/butterfly.cpp PROPERTIES
-            COMPILE_OPTIONS "/arch:AVX2")
-    else()
-        set_source_files_properties(src/fftop/backend/cpu/butterfly.cpp PROPERTIES
-            COMPILE_OPTIONS "-mavx2;-mfma")
-    endif()
+if(MSVC)
+    set_source_files_properties(src/fftop/backend/cpu/simd/kernel_avx2.cpp PROPERTIES
+        COMPILE_OPTIONS "/arch:AVX2")
 endif()
 
 if(FFTOP_ENABLE_CUDA)

@@ -1,10 +1,14 @@
 #pragma once
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC target("avx2,fma")
+#endif
+
 #include "fftop/types.h"
 
 #include <immintrin.h>
 
-namespace FFTop::CPU::ISA {
+namespace FFTop::CPU::Avx2 {
 
 using Pack = __m128d;
 
@@ -36,4 +40,4 @@ inline Pack mul_j(Pack z) {
 inline Pack mul_minus_j(Pack z) {
     return _mm_xor_pd(_mm_shuffle_pd(z, z, 0x1), setc(0.0, -0.0));
 }
-}  // namespace FFTop::CPU::ISA
+}  // namespace FFTop::CPU::Avx2

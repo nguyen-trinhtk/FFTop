@@ -4,7 +4,7 @@
 
 #include <arm_neon.h>
 
-namespace FFTop::CPU::ISA {
+namespace FFTop::CPU::Neon {
 
 using Pack = float64x2_t;
 
@@ -44,4 +44,4 @@ inline Pack mul_minus_j(Pack z) {
     const Pack pns     = {1.0, -1.0};
     return vmulq_f64(swapped, pns);
 }
-}  // namespace FFTop::CPU::ISA
+}  // namespace FFTop::CPU::Neon

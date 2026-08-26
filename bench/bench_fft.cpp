@@ -1,5 +1,6 @@
 #include "fftop/backend/backend_registry.h"
 #include "fftop/plan/plan.h"
+#include "fftop/system.h"
 #include "fftop/types.h"
 
 #include <chrono>
@@ -26,6 +27,7 @@ void bench(FFTop::IBackend& backend, const FFTop::FFTPlan& plan) {
 }  // namespace
 
 int main() {
+    std::cerr << FFTop::describe_system(FFTop::system_config());
     std::cout << "backend,radix,size,ms\n";
     // Powers of four, the sizes both radices can tile, so the two are comparable.
     for (std::size_t n = 64; n <= 4096; n *= 4) {

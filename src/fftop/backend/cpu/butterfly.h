@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fftop/math/integer.h"
+#include "fftop/system.h"
 #include "fftop/types.h"
 
 #include <cstddef>
@@ -26,16 +27,24 @@ public:
 
 class Radix2 final : public IRadixB {
 public:
+    explicit Radix2(Simd simd);
     std::size_t radix() const override { return 2; }
     void butterfly(Buffer& data, std::size_t offset, std::size_t stride,
                    Direction dir) const override;
+
+private:
+    void (*fn_)(Buffer&, std::size_t, std::size_t, Direction);
 };
 
 class Radix4 final : public IRadixB {
 public:
+    explicit Radix4(Simd simd);
     std::size_t radix() const override { return 4; }
     void butterfly(Buffer& data, std::size_t offset, std::size_t stride,
                    Direction dir) const override;
+
+private:
+    void (*fn_)(Buffer&, std::size_t, std::size_t, Direction);
 };
 
 }  // namespace FFTop::CPU
