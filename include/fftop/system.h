@@ -5,31 +5,34 @@
 
 namespace FFTop {
 
-enum class Simd { Scalar, Sse2, Avx2, Avx512, Neon };
+    // Supported SIMD instructions
+    enum class SIMD { Scalar, AVX2, AVX512, NEON };
 
-struct SystemConfig {
-    std::string cpu;
-    std::size_t cpu_threads = 1;
-    Simd        simd        = Simd::Scalar;
-    Simd        kernel_simd = Simd::Scalar;
-    bool        openmp      = false;
-    bool        nvidia_gpu  = false;  // hardware seen (runtime or nvidia-smi)
-    bool        cuda        = false;  // CUDA backend compiled in and a device is present
-};
+    struct SystemConfig {
+        // CPU
+        std::string cpu;
+        std::size_t cpu_threads = 1;
+        SIMD        simd        = SIMD::Scalar;
+        bool        openmp      = false;
 
-inline const char* to_string(Simd simd) {
-    switch (simd) {
-    case Simd::Sse2:   return "sse2";
-    case Simd::Avx2:   return "avx2";
-    case Simd::Avx512: return "avx512";
-    case Simd::Neon:   return "neon";
-    case Simd::Scalar: return "scalar";
+        // GPU
+        bool        nvidia_gpu  = false;  // hardware seen (runtime or nvidia-smi)
+        bool        cuda        = false;  // CUDA backend compiled in and a device is present
+    };
+
+
+    // Utils: convert simd enum to string
+    inline const char* to_string(SIMD simd) {
+        switch (simd) {
+            case SIMD::AVX2:   return "avx2";
+            case SIMD::AVX512: return "avx512";
+            case SIMD::NEON:   return "neon";
+            case SIMD::Scalar: return "scalar";
+        }
+        return "unknown";
     }
-    return "scalar";
-}
 
-SystemConfig        detect_system_config();
-const SystemConfig& system_config();
-std::string         describe_system(const SystemConfig& cfg);
-
+    SystemConfig        detect_system_config();
+    const SystemConfig& system_config();
+    std::string         describe_system(const SystemConfig& cfg);
 }  // namespace FFTop
