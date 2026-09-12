@@ -9,7 +9,6 @@
 
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
-#include <sys/types.h>
 #endif
 
 #if !defined(_WIN32)
@@ -45,6 +44,7 @@ void cpuid(int leaf, int sub, unsigned regs[4]) {
 #endif
 }
 
+// Intel/AMD stash the marketing name in three CPUID leaves as raw ASCII.
 std::string x86_brand() {
     unsigned r[4]{};
     cpuid(static_cast<int>(0x80000000u), 0, r);
@@ -57,30 +57,28 @@ std::string x86_brand() {
     return trim(buf);
 }
 
-Simd x86_simd() {
+// XCR0: which wide register files the OS will actually save on a context switch.
+std::uint64_t xcr0() {
+#if defined(_MSC_VER)
+    return _xgetbv(0);
+#else
+    unsigned eax, edx;
+    __asm__ volatile("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
+    return (static_cast<std::uint64_t>(edx) << 32) | eax;
+#endif
+}
+
+SIMD x86_simd() {
     unsigned r[4]{};
     cpuid(0, 0, r);
     const unsigned max_leaf = r[0];
-    if (max_leaf < 1) return Simd::Scalar;
+    if (max_leaf < 1) return SIMD::Scalar;
 
     cpuid(1, 0, r);
     const bool sse2    = r[3] & (1u << 26);
     const bool osxsave = r[2] & (1u << 27);
     const bool avx     = r[2] & (1u << 28);
-
-    bool avx_os = false;
-    bool avx512_os = false;
-    if (osxsave) {
-#if defined(_MSC_VER)
-        const auto xcr0 = _xgetbv(0);
-#else
-        unsigned eax, edx;
-        __asm__ volatile("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
-        const auto xcr0 = (static_cast<std::uint64_t>(edx) << 32) | eax;
-#endif
-        avx_os    = (xcr0 & 0x6) == 0x6;
-        avx512_os = (xcr0 & 0xE0) == 0xE0;
-    }
+    const auto xcr     = osxsave ? xcr0() : 0ull;
 
     bool avx2 = false;
     bool avx512f = false;
@@ -90,20 +88,16 @@ Simd x86_simd() {
         avx512f = r[1] & (1u << 16);
     }
 
-    if (avx512f && avx && avx_os && avx512_os) return Simd::Avx512;
-    if (avx2 && avx && avx_os) return Simd::Avx2;
-    if (sse2) return Simd::Sse2;
-    return Simd::Scalar;
+    // Chip bit AND OS-enabled registers. Missing either → crash on first use.
+    if (avx512f && avx && (xcr & 0xE6) == 0xE6) return SIMD::AVX512;
+    if (avx2 && avx && (xcr & 0x6) == 0x6)      return SIMD::AVX2;
+    if (sse2)                                   return SIMD::SSE2;
+    return SIMD::Scalar;
 }
 
 #endif
 
 #if defined(__APPLE__)
-
-bool sysctl_u32(const char* name, std::uint32_t& out) {
-    size_t n = sizeof(out);
-    return sysctlbyname(name, &out, &n, nullptr, 0) == 0;
-}
 
 std::string sysctl_str(const char* name) {
     size_t n = 0;
@@ -114,21 +108,9 @@ std::string sysctl_str(const char* name) {
     return trim(s);
 }
 
-const char* apple_family_name(std::uint32_t family) {
-    switch (family) {
-    case 0x1b588bb3u: return "Apple M1";
-    case 0xda33d83du: return "Apple M2";
-    case 0x8765edeau: return "Apple A16";
-    case 0xfa33415eu: return "Apple M3";
-    case 0x5f4dea93u: return "Apple M3 Pro";
-    case 0x72015832u: return "Apple M3 Max";
-    case 0x6f5129acu: return "Apple M4";
-    case 0x17d5b93au: return "Apple M4 Pro/Max";
-    default:          return nullptr;
-    }
-}
-
 #endif
+
+#if defined(__linux__)
 
 std::string proc_cpuinfo_model() {
     std::ifstream in("/proc/cpuinfo");
@@ -145,22 +127,19 @@ std::string proc_cpuinfo_model() {
     return fallback;
 }
 
+#endif
+
 }  // namespace
 
 std::string detect_cpu_name() {
 #if defined(FFTOP_X86)
     if (auto brand = x86_brand(); !brand.empty()) return brand;
 #endif
+#if defined(__linux__)
     if (auto from_proc = proc_cpuinfo_model(); !from_proc.empty()) return from_proc;
+#endif
 #if defined(__APPLE__)
     if (auto brand = sysctl_str("machdep.cpu.brand_string"); !brand.empty()) return brand;
-    std::uint32_t family = 0;
-    if (sysctl_u32("hw.cpufamily", family)) {
-        if (const char* name = apple_family_name(family)) {
-            const auto model = sysctl_str("hw.model");
-            return model.empty() ? std::string(name) : std::string(name) + " (" + model + ")";
-        }
-    }
     if (auto model = sysctl_str("hw.model"); !model.empty()) return "Apple Silicon (" + model + ")";
 #endif
 #if !defined(_WIN32)
@@ -170,13 +149,13 @@ std::string detect_cpu_name() {
     return "unknown";
 }
 
-Simd detect_simd() {
+SIMD detect_simd() {
 #if defined(FFTOP_X86)
     return x86_simd();
 #elif defined(__aarch64__) || defined(_M_ARM64)
-    return Simd::Neon;
+    return SIMD::NEON;
 #else
-    return Simd::Scalar;
+    return SIMD::Scalar;
 #endif
 }
 
