@@ -16,8 +16,8 @@ namespace FFTop {
         bool        openmp      = false;
 
         // GPU
-        bool        nvidia_gpu  = false;  // hardware seen (runtime or nvidia-smi)
-        bool        cuda        = false;  // CUDA backend compiled in and a device is present
+        bool nvidia_gpu  = false;  // hardware seen (runtime or nvidia-smi)
+        bool cuda = false;  // CUDA backend compiled in and a device is present
     };
 
 
