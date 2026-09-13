@@ -15,7 +15,7 @@ public:
 
 private:
     SystemConfig system_;
-    PlanCache*   cache_;
+    PlanCache* cache_;
 };
 
 }  // namespace FFTop
