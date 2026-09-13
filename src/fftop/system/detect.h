@@ -5,12 +5,11 @@
 #include <string>
 
 namespace FFTop {
-
-std::string detect_cpu_name();
-Simd        detect_simd();
-bool        detect_openmp();
-std::size_t detect_thread_count();
-bool        detect_nvidia_gpu();
-bool        detect_cuda();
-
+    // System config detection
+    std::string detect_cpu_name();
+    SIMD        detect_simd();
+    bool        detect_openmp();
+    std::size_t detect_thread_count();
+    bool        detect_nvidia_gpu();
+    bool        detect_cuda();
 }  // namespace FFTop
