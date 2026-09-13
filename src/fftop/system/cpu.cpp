@@ -1,4 +1,5 @@
 #include "fftop/system/detect.h"
+#include "fftop/backend/cpu/simd/arch.h"
 
 #include <algorithm>
 #include <cctype>
@@ -37,14 +38,16 @@ std::string trim(std::string s) {
 #if defined(FFTOP_X86)
 
 void cpuid(int leaf, int sub, unsigned regs[4]) {
-#if defined(_MSC_VER)
+    // x86 will expose all supported features in the CPUID leaves
+#if defined(_MSC_VER) // Windows
     __cpuidex(reinterpret_cast<int*>(regs), leaf, sub);
-#else
+#else // others
     __cpuid_count(leaf, sub, regs[0], regs[1], regs[2], regs[3]);
 #endif
 }
 
-// Intel/AMD stash the marketing name in three CPUID leaves as raw ASCII.
+// x86 detection: brand
+// Intel/AMD stash name in three CPUID leaves
 std::string x86_brand() {
     unsigned r[4]{};
     cpuid(static_cast<int>(0x80000000u), 0, r);
@@ -75,7 +78,6 @@ SIMD x86_simd() {
     if (max_leaf < 1) return SIMD::Scalar;
 
     cpuid(1, 0, r);
-    const bool sse2    = r[3] & (1u << 26);
     const bool osxsave = r[2] & (1u << 27);
     const bool avx     = r[2] & (1u << 28);
     const auto xcr     = osxsave ? xcr0() : 0ull;
@@ -91,7 +93,6 @@ SIMD x86_simd() {
     // Chip bit AND OS-enabled registers. Missing either → crash on first use.
     if (avx512f && avx && (xcr & 0xE6) == 0xE6) return SIMD::AVX512;
     if (avx2 && avx && (xcr & 0x6) == 0x6)      return SIMD::AVX2;
-    if (sse2)                                   return SIMD::SSE2;
     return SIMD::Scalar;
 }
 
@@ -150,13 +151,24 @@ std::string detect_cpu_name() {
 }
 
 SIMD detect_simd() {
+// Use widest supported SIMD kernel
 #if defined(FFTOP_X86)
-    return x86_simd();
+    const SIMD hw = x86_simd();
+#if defined(FFTOP_HAS_AVX512_KERNEL)
+    if (hw == SIMD::AVX512) return SIMD::AVX512;
+#endif
+#if defined(FFTOP_HAS_AVX2_KERNEL)
+    if (hw == SIMD::AVX2 || hw == SIMD::AVX512) return SIMD::AVX2;
+#endif
+    return SIMD::Scalar;
 #elif defined(__aarch64__) || defined(_M_ARM64)
+#if defined(FFTOP_HAS_NEON_KERNEL)
     return SIMD::NEON;
 #else
     return SIMD::Scalar;
 #endif
+#else
+    return SIMD::Scalar;
+#endif
 }
-
 }  // namespace FFTop

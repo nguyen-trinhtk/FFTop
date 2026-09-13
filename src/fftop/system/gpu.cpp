@@ -7,10 +7,11 @@
 #include <cuda_runtime.h>
 #endif
 
+// Note: currently only support NVIDIA GPUs with CUDA
 namespace FFTop {
-
 bool detect_cuda() {
 #if defined(FFTOP_ENABLE_CUDA)
+    // Check if CUDA device is available
     int n = 0;
     return cudaGetDeviceCount(&n) == cudaSuccess && n > 0;
 #else
@@ -19,23 +20,27 @@ bool detect_cuda() {
 }
 
 bool detect_nvidia_gpu() {
-    if (detect_cuda()) return true;
-
+    if (detect_cuda()) return true; // cuda available
 #if defined(_WIN32)
+    // Windows
     FILE* pipe = _popen("nvidia-smi -L 2>NUL", "r");
 #else
+    // Unix-like
     FILE* pipe = popen("nvidia-smi -L 2>/dev/null", "r");
 #endif
     if (!pipe) return false;
 
+    // Scan output for GPU presence
     char line[512];
     bool found = false;
     while (std::fgets(line, sizeof line, pipe)) {
         if (std::strstr(line, "failed") || std::strstr(line, "not found")) {
+            // failed to find GPU
             found = false;
             break;
         }
         if (std::strstr(line, "GPU")) {
+            // found GPU
             found = true;
             break;
         }
@@ -47,5 +52,4 @@ bool detect_nvidia_gpu() {
 #endif
     return found;
 }
-
 }  // namespace FFTop
