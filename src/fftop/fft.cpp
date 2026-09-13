@@ -7,6 +7,7 @@
 
 namespace FFTop {
 namespace {
+// Singleton plan cache
 PlanCache& default_cache() {
     static PlanCache instance;
     return instance;
@@ -14,10 +15,19 @@ PlanCache& default_cache() {
 }  // namespace
 
 Buffer fft(const Buffer& input, const FFTOptions& options) {
-    const SystemConfig& sys = system_config();
+    // check system config
+    const SystemConfig& sys = system_config(); 
+
+    // create planner
     Planner planner(sys, &default_cache());
+
+    // make plan based on input size
     const FFTPlan plan = planner.make_plan(input.size(), options);
-    auto backend = make_backend(plan);
+    
+    // make backend
+    auto backend = make_backend(plan, sys);
+
+    // execute plan
     Buffer output;
     backend->execute(plan, input, output);
     return output;
