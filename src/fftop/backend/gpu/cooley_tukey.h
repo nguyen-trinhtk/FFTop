@@ -16,14 +16,16 @@ namespace FFTop {
 class CooleyTukeyGPUBackend final : public GPUBackend {
 public:
     CooleyTukeyGPUBackend(std::unique_ptr<GPU::IGPURadix>             radix,
-                          std::unique_ptr<GPU::IGPUTraversalStrategy> traversal);
+                          std::unique_ptr<GPU::IGPUTraversalStrategy> traversal,
+                          std::string                                 name = "GPU/CooleyTukey");
 
-    std::string name() const override { return "GPU/CooleyTukey"; }
+    std::string name() const override { return name_; }
     void execute(const FFTPlan& plan, const Buffer& input, Buffer& output) override;
 
 private:
     std::unique_ptr<GPU::IGPURadix>             radix_;
     std::unique_ptr<GPU::IGPUTraversalStrategy> traversal_;
+    std::string                                 name_;
 };
 
 }  // namespace FFTop

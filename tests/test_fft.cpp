@@ -7,6 +7,8 @@ using namespace FFTop;
 using namespace FFTop::Test;
 
 TEST(Fft, MatchesDft) {
-    auto transform = [](const Buffer& x, Direction dir) { return fft(x, {Backend::CPU, dir}); };
+    auto transform = [](const Buffer& x, Direction dir) {
+        return fft(x, {HardwareTarget::CPU, dir});
+    };
     for_each_input(kPowersOfTwo, [&](const Buffer& x) { expect_matches_dft(transform, x); });
 }

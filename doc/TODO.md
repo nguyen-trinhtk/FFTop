@@ -1,3 +1,4 @@
+# BLOCK 3 HOURS SATURDAY CODE REVIEW
 - all: 
   + radix-B
   + generalized N
@@ -14,10 +15,9 @@
 - cpu: 
   + add sse2 for full compatibility, avx, (avx512 later)
 
-- gpu: 
-  + naive-only for now
-  + then tiling, stockham, bailey 4-step
-  + shared mem tiling
+- gpu:
+  + stockham
+  + tiling, bailey 4-step
 
   + coalesced mem access (+ transpose for 2D FFTs or 4 step FFTs)
   + register-level

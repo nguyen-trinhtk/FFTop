@@ -8,7 +8,6 @@
 #include "fftop/types.h"
 
 #include <cstddef>
-#include <memory>
 
 namespace FFTop::GPU {
 

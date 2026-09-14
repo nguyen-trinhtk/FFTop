@@ -1,0 +1,78 @@
+# Default bench config. Comparisons are questions; C++ only times a spec.
+# Scales: log | linear (scalar is an alias for linear).
+
+schema: 2
+
+defaults:
+  min_k: 6
+  max_k: 24
+  xscale: log
+  yscale: linear
+  plot: time_vs_n
+  hold_fixed: true
+  variant:
+    backend: CPU
+    traversal: iterative
+    radix: "2"
+    simd: scalar
+    execution: serial
+    threads: 1
+
+variants:
+  naive:
+    backend: naive-dft
+    traversal: "-"
+    radix: "-"
+    simd: "-"
+    execution: "-"
+    label: naive DFT
+  recursive:
+    traversal: recursive
+    label: recursive / radix-2 / scalar
+  iterative-r2:
+    label: iterative / radix-2 / scalar
+  iterative-r4:
+    radix: "4"
+    label: iterative / radix-4 / scalar
+  iterative-r2-simd:
+    simd: host
+  best:
+    radix: auto
+    simd: host
+    execution: parallel
+    threads: host
+    label: best
+
+comparisons:
+  - id: naive-vs-fft
+    title: Naive DFT vs FFT
+    question: Is the fast algorithm actually faster?
+    variants: [naive, recursive]
+    max_k: 12
+  - id: recursive-vs-iterative
+    title: Recursive vs iterative
+    question: Is the loop version faster than recursion?
+    variants: [recursive, iterative-r2]
+  - id: radix2-vs-radix4
+    title: Two at a time vs four at a time
+    question: Is grouping four points cheaper than two?
+    variants: [iterative-r2, iterative-r4]
+    gates: [power_of_4]
+  - id: scalar-vs-simd
+    title: Scalar vs SIMD
+    question: Does vectorizing the kernel help?
+    variants: [iterative-r2, iterative-r2-simd]
+    gates: [needs_simd]
+  - id: serial-vs-openmp
+    title: One thread vs many
+    question: Do extra threads help when N is large?
+    variants: [iterative-r2]
+    min_k: 12
+    gates: [needs_omp]
+    plot: openmp
+    thread_sweep: true
+  - id: conclusion
+    title: Plain iterative vs our best
+    question: How much did the CPU work buy us?
+    variants: [iterative-r2, best]
+    hold_fixed: false

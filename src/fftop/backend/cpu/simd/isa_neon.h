@@ -3,9 +3,11 @@
 #include "fftop/types.h"
 
 #include <arm_neon.h>
+#include <cstddef>
 
-namespace FFTop::CPU::Neon {
+namespace FFTop::CPU::NEON {
 
+static constexpr std::size_t width = 1;
 using Pack = float64x2_t;
 
 inline Pack load(const Complex& z) {
@@ -15,6 +17,8 @@ inline Pack load(const Complex& z) {
 inline void store(Complex& z, Pack v) {
     vst1q_f64(reinterpret_cast<double*>(&z), v);
 }
+
+inline Pack load_pack(const Real* p) { return vld1q_f64(p); }
 
 inline Pack setc(double re, double im) {
     return vsetq_lane_f64(im, vdupq_n_f64(re), 1);
@@ -44,4 +48,9 @@ inline Pack mul_minus_j(Pack z) {
     const Pack pns     = {1.0, -1.0};
     return vmulq_f64(swapped, pns);
 }
-}  // namespace FFTop::CPU::Neon
+
+inline Pack conj(Pack z) {
+    const uint64x2_t sign_im = vreinterpretq_u64_f64(Pack{0.0, -0.0});
+    return vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(z), sign_im));
+}
+}  // namespace FFTop::CPU::NEON

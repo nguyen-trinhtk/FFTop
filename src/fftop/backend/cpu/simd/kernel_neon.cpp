@@ -5,23 +5,23 @@
 #include "fftop/backend/cpu/simd/isa_neon.h"
 #include "fftop/backend/cpu/simd/kernels.h"
 
-#include <cmath>
-
 namespace FFTop::CPU {
 namespace {
 
-namespace ISA = ::FFTop::CPU::Neon;
+namespace ISA = ::FFTop::CPU::NEON;
 
 #include "fftop/backend/cpu/simd/kernel.inl"
 
 }  // namespace
 
-void radix2_neon(Buffer& data, std::size_t offset, std::size_t stride, Direction dir) {
-    radix2(data, offset, stride, dir);
+void radix2_neon(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
+                 const Complex* W, std::size_t n) {
+    radix2(data, offset, stride, dir, W, n);
 }
 
-void radix4_neon(Buffer& data, std::size_t offset, std::size_t stride, Direction dir) {
-    radix4(data, offset, stride, dir);
+void radix4_neon(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
+                 const Complex* W, std::size_t n) {
+    radix4(data, offset, stride, dir, W, n);
 }
 
 }  // namespace FFTop::CPU
