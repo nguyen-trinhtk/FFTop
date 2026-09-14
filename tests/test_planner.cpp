@@ -10,26 +10,18 @@ TEST(Planner, PrefersRadix4WhenSizeIsPowerOfFour) {
     EXPECT_EQ(planner.make_plan(32, {}).radix, RadixPolicy::Radix2);
 }
 
-TEST(Planner, ParallelOnlyWithOpenMp) {
-    SystemConfig sys;
-    sys.cpu_threads = 8;
-    sys.openmp = false;
-    EXPECT_EQ(Planner(sys).make_plan(16, {}).execution, Execution::Serial);
-    sys.openmp = true;
-    EXPECT_EQ(Planner(sys).make_plan(16, {}).execution, Execution::Parallel);
-}
-
 TEST(Planner, AutoPicksGpuWhenCudaIsUsable) {
     SystemConfig sys;
     sys.cuda = true;
-    EXPECT_EQ(Planner(sys).make_plan(16, {}).backend, Backend::GPU);
-    EXPECT_EQ(Planner(sys).make_plan(16, {Backend::CPU, Direction::Forward}).backend,
-              Backend::CPU);
+    EXPECT_EQ(Planner(sys).make_plan(16, {}).hardware_target, HardwareTarget::GPU);
+    EXPECT_EQ(Planner(sys).make_plan(16, {HardwareTarget::CPU, Direction::Forward})
+                  .hardware_target,
+              HardwareTarget::CPU);
 }
 
 TEST(Planner, AutoStaysOnCpuWithoutCuda) {
     SystemConfig sys;
     sys.nvidia_gpu = true;
-    sys.cuda = false;
-    EXPECT_EQ(Planner(sys).make_plan(16, {}).backend, Backend::CPU);
+    sys.cuda       = false;
+    EXPECT_EQ(Planner(sys).make_plan(16, {}).hardware_target, HardwareTarget::CPU);
 }

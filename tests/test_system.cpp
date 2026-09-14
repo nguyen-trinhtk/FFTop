@@ -9,19 +9,11 @@ TEST(System, DetectsHost) {
     EXPECT_GE(sys.cpu_threads, 1u);
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-    EXPECT_EQ(sys.simd, FFTop::Simd::Neon);
+    EXPECT_EQ(sys.simd, FFTop::SIMD::NEON);
 #elif defined(__x86_64__) || defined(_M_X64)
-    EXPECT_TRUE(sys.simd == FFTop::Simd::Sse2 || sys.simd == FFTop::Simd::Avx2 ||
-                sys.simd == FFTop::Simd::Avx512);
+    EXPECT_TRUE(sys.simd == FFTop::SIMD::Scalar || sys.simd == FFTop::SIMD::AVX2 ||
+                sys.simd == FFTop::SIMD::AVX512);
 #endif
-
-    if (sys.kernel_simd == FFTop::Simd::Avx2) {
-        EXPECT_TRUE(sys.simd == FFTop::Simd::Avx2 || sys.simd == FFTop::Simd::Avx512);
-    } else if (sys.kernel_simd == FFTop::Simd::Neon) {
-        EXPECT_EQ(sys.simd, FFTop::Simd::Neon);
-    } else {
-        EXPECT_EQ(sys.kernel_simd, FFTop::Simd::Scalar);
-    }
 
     const std::string text = FFTop::describe_system(sys);
     EXPECT_NE(text.find("cpu:"), std::string::npos);

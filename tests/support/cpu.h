@@ -6,6 +6,7 @@
 #include "support/check.h"
 
 #include <memory>
+#include <vector>
 
 namespace FFTop::Test {
 
@@ -15,14 +16,23 @@ inline const char* name(Traversal traversal) {
     return traversal == Traversal::Iterative ? "iterative" : "recursive";
 }
 
-inline std::unique_ptr<CPUBackend> make_cpu(RadixPolicy radix, Traversal traversal,
-                                            Execution execution = Execution::Serial,
-                                            Simd simd = system_config().kernel_simd) {
-    FFTPlan plan;
-    plan.radix     = radix;
-    plan.traversal = traversal;
-    plan.execution = execution;
-    return make_cpu_backend(plan, simd);
+inline std::vector<std::unique_ptr<IBackend>> all_backends() {
+    std::vector<std::unique_ptr<IBackend>> out;
+
+    FFTPlan cpu;
+    cpu.hardware_target = HardwareTarget::CPU;
+    out.push_back(make_backend(cpu));
+
+#if defined(FFTOP_ENABLE_CUDA)
+    FFTPlan gpu;
+    gpu.hardware_target = HardwareTarget::GPU;
+    try {
+        auto backend = make_backend(gpu);
+        if (backend->is_available()) out.push_back(std::move(backend));
+    } catch (const std::runtime_error&) {
+    }
+#endif
+    return out;
 }
 
 inline Buffer run(IBackend& backend, const Buffer& input, Direction dir) {

@@ -16,12 +16,13 @@ public:
                std::unique_ptr<CPU::ITraversalStrategy> traversal_strategy,
                std::unique_ptr<CPU::IExecutionMode>     execution_mode);
 
-    bool        is_available() const override { return true; }
-    std::string name()         const override { return "CPU"; }
-    void        execute(const FFTPlan& plan, const Buffer& input, Buffer& output) override;
+    bool is_available() const override { return true; } // always true for now
+    std::string name() const override { return "CPU"; }
+    void execute(const FFTPlan& plan, const Buffer& input, Buffer& output) override;
 
 private:
-    std::unique_ptr<CPU::IRadixB>         butterfly_;
+    // Composable components
+    std::unique_ptr<CPU::IRadixB> butterfly_;
     std::unique_ptr<CPU::ITraversalStrategy> traversal_strategy_;
     std::unique_ptr<CPU::IExecutionMode>     execution_mode_;
 };

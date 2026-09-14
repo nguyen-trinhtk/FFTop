@@ -7,20 +7,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(fftop STATIC
+    src/fftop/backend/backend_registry.cpp
     src/fftop/backend/cpu/cpu.cpp
+    src/fftop/backend/cpu/cpu_factory.cpp
     src/fftop/backend/cpu/butterfly.cpp
     src/fftop/backend/cpu/simd/kernel_scalar.cpp
     src/fftop/backend/cpu/simd/kernel_avx2.cpp
+    src/fftop/backend/cpu/simd/kernel_avx512.cpp
     src/fftop/backend/cpu/simd/kernel_neon.cpp
     src/fftop/backend/cpu/traversal_strategy.cpp
-    src/fftop/backend/gpu/gpu_backend.cpp
-    src/fftop/backend/gpu/naive.cpp
-    src/fftop/backend/gpu/cooley_tukey.cpp
     src/fftop/system/config.cpp
     src/fftop/system/cpu.cpp
     src/fftop/system/gpu.cpp
     src/fftop/system/openmp.cpp
     src/fftop/fft.cpp
+    src/fftop/math/twiddle.cpp
     src/fftop/plan/cache.cpp
     src/fftop/plan/planner.cpp
 )
@@ -66,6 +67,11 @@ endif()
 if(MSVC)
     set_source_files_properties(src/fftop/backend/cpu/simd/kernel_avx2.cpp PROPERTIES
         COMPILE_OPTIONS "/arch:AVX2")
+    set_source_files_properties(src/fftop/backend/cpu/simd/kernel_avx512.cpp PROPERTIES
+        COMPILE_OPTIONS "/arch:AVX512")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64|i.86")
+    set_source_files_properties(src/fftop/backend/cpu/simd/kernel_avx512.cpp PROPERTIES
+        COMPILE_OPTIONS "-mavx512f")
 endif()
 
 if(FFTOP_ENABLE_CUDA)
@@ -79,7 +85,9 @@ if(FFTOP_ENABLE_CUDA)
         find_package(CUDAToolkit REQUIRED)
 
         target_sources(fftop PRIVATE
-            src/fftop/backend/gpu/naive.cu
+            src/fftop/backend/gpu/gpu_backend.cpp
+            src/fftop/backend/gpu/gpu_factory.cpp
+            src/fftop/backend/gpu/cooley_tukey.cpp
             src/fftop/backend/gpu/gpu_fft.cu
         )
         target_link_libraries(fftop PUBLIC CUDA::cudart)

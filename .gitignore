@@ -1,3 +1,10 @@
 build/
 *.dSYM/
 .DS_Store
+.venv/
+.mplconfig/
+__pycache__/
+log/
+cursor-playground/
+.cache/
+doc/TODO.md

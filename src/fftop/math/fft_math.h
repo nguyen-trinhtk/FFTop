@@ -46,9 +46,8 @@ inline bool is_power_of(std::size_t n, std::size_t base) {
     return n == 1;
 }
 
-
-// reverse the digits of index in base radix
-FFTOP_HOST_DEVICE 
+// Map index i to its digit-reversed partner in [0, n) with the given radix.
+FFTOP_HOST_DEVICE
 inline std::size_t digit_reverse(std::size_t index, std::size_t n, std::size_t radix) {
     // fast path for power of 2
     if (is_power_of_two(radix)) {
@@ -70,4 +69,5 @@ inline std::size_t digit_reverse(std::size_t index, std::size_t n, std::size_t r
     }
     return reversed;
 }
+
 }  // namespace FFTop::Math

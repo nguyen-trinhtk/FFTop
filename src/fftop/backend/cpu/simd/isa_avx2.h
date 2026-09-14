@@ -6,10 +6,12 @@
 
 #include "fftop/types.h"
 
+#include <cstddef>
 #include <immintrin.h>
 
-namespace FFTop::CPU::Avx2 {
+namespace FFTop::CPU::AVX2 {
 
+static constexpr std::size_t width = 1;
 using Pack = __m128d;
 
 inline Pack load(const Complex& z) {
@@ -20,6 +22,7 @@ inline void store(Complex& z, Pack v) {
     _mm_storeu_pd(reinterpret_cast<double*>(&z), v);
 }
 
+inline Pack load_pack(const Real* p) { return _mm_loadu_pd(p); }
 inline Pack setc(double re, double im) { return _mm_setr_pd(re, im); }
 inline Pack add(Pack a, Pack b)        { return _mm_add_pd(a, b); }
 inline Pack sub(Pack a, Pack b)        { return _mm_sub_pd(a, b); }
@@ -40,4 +43,8 @@ inline Pack mul_j(Pack z) {
 inline Pack mul_minus_j(Pack z) {
     return _mm_xor_pd(_mm_shuffle_pd(z, z, 0x1), setc(0.0, -0.0));
 }
-}  // namespace FFTop::CPU::Avx2
+
+inline Pack conj(Pack z) {
+    return _mm_xor_pd(z, setc(0.0, -0.0));
+}
+}  // namespace FFTop::CPU::AVX2

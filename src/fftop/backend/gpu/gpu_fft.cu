@@ -2,8 +2,7 @@
 #include "fftop/backend/gpu/gpu_traversal.h"
 #include "fftop/backend/gpu/cooley_tukey.h"
 #include "fftop/backend/gpu/gpu_utils.h"
-#include "fftop/math/fft_math.h"    // shared digit_reverse — __host__ __device__
-#include "fftop/math/integer.h"     // is_power_of
+#include "fftop/math/fft_math.h"
 
 #include <cassert>
 #include <cuda_runtime.h>
@@ -47,11 +46,10 @@ double2 twiddle(unsigned k, unsigned order, int inverse) {
     return make_double2(c, s);
 }
 
-// ── Digit-reversal permute ───────────────────────────────────────────────────
+// ── In-place DIT reorder (device) ────────────────────────────────────────────
+// Same permutation as CPU traversal: swap i with digit_reverse(i) when i < j.
 
-// In-place permute: thread i swaps data[i] with data[rev(i)] when i < rev(i).
-// The permutation has disjoint pairs, so no two threads touch the same location.
-__global__ void k_digit_reverse_permute(double2* data, unsigned n, unsigned radix) {
+__global__ void k_inplace_dit_reorder(double2* data, unsigned n, unsigned radix) {
     const unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= n) return;
     const unsigned j = static_cast<unsigned>(
@@ -125,9 +123,9 @@ inline unsigned blocks_for(unsigned n) {
     return (n + kBlock - 1) / kBlock;
 }
 
-void launch_digit_reverse_permute(double2* d, unsigned n, unsigned radix) {
-    k_digit_reverse_permute<<<blocks_for(n), kBlock>>>(d, n, radix);
-    GPU::check_cuda(cudaGetLastError(), "digit_reverse_permute");
+void launch_inplace_dit_reorder(double2* d, unsigned n, unsigned radix) {
+    k_inplace_dit_reorder<<<blocks_for(n), kBlock>>>(d, n, radix);
+    GPU::check_cuda(cudaGetLastError(), "inplace_dit_reorder");
 }
 
 }  // anonymous namespace
@@ -136,8 +134,8 @@ void launch_digit_reverse_permute(double2* d, unsigned n, unsigned radix) {
 
 namespace GPU {
 
-bool GPURadix2::supports(std::size_t n) const { return is_power_of(n, 2); }
-bool GPURadix4::supports(std::size_t n) const { return is_power_of(n, 4); }
+bool GPURadix2::supports(std::size_t n) const { return Math::is_power_of(n, 2); }
+bool GPURadix4::supports(std::size_t n) const { return Math::is_power_of(n, 4); }
 
 void GPURadix2::butterfly_stage(Complex* d_data, std::size_t n,
                                  std::size_t stride, Direction dir) const {
@@ -159,8 +157,8 @@ void GPURadix4::butterfly_stage(Complex* d_data, std::size_t n,
 
 // ── IterativeGPUTraversalStrategy ───────────────────────────────────────────
 //
-// Mirrors IterativeTraversalStrategy::run() from traversal_strategy.cpp:
-//   1. digit-reverse permute (one kernel)
+// Mirrors CPU in-place DIT iterative traversal:
+//   1. inplace DIT reorder (one kernel)
 //   2. for each stage: one butterfly kernel
 //
 // Kernels in the same CUDA stream execute in order, so no explicit sync
@@ -173,81 +171,11 @@ void IterativeGPUTraversalStrategy::run(Complex* d_data, std::size_t n,
     assert(radix.supports(n));
 
     auto* d = reinterpret_cast<double2*>(d_data);
-    launch_digit_reverse_permute(d, static_cast<unsigned>(n),
-                                 static_cast<unsigned>(radix.radix()));
+    launch_inplace_dit_reorder(d, static_cast<unsigned>(n),
+                               static_cast<unsigned>(radix.radix()));
 
     for (std::size_t stride = 1; stride < n; stride *= radix.radix())
         radix.butterfly_stage(d_data, n, stride, dir);
-}
-
-// ── Stockham pass kernel ─────────────────────────────────────────────────────
-//
-// One pass of the Stockham auto-sort radix-2 FFT.
-// Reads from `in` (strided), writes to `out` (consecutive) — no bit-reversal
-// ever needed.  h = current sub-FFT size (1, 2, 4, ..., N/2).
-//
-// Each thread k writes to out[k]:
-//   group = k / (2h)     which pair of size-h sub-FFTs to merge
-//   pos   = k % h        position within the sub-FFT
-//   half  = (k/h) % 2   0 → sum half, 1 → difference half
-//
-//   in0 = in[group*h + pos]
-//   in1 = in[group*h + pos + N/2]   (partner sub-FFT, always N/2 apart)
-//   tw  = twiddle(pos, 2h)
-//   out[k] = half==0 ? in0 + tw*in1
-//                    : in0 - tw*in1
-
-__global__ void k_stockham_pass(const double2* __restrict__ in,
-                                 double2* __restrict__ out,
-                                 unsigned n, unsigned h, int inverse) {
-    const unsigned k = blockIdx.x * blockDim.x + threadIdx.x;
-    if (k >= n) return;
-
-    const unsigned L     = h * 2;
-    const unsigned group = k / L;
-    const unsigned pos   = k % h;
-    const unsigned half  = (k / h) & 1u;
-
-    const double2 a  = in[group * h + pos];
-    const double2 bw = cmul(twiddle(pos, L, inverse), in[group * h + pos + n / 2]);
-
-    out[k] = (half == 0) ? cadd(a, bw) : csub(a, bw);
-}
-
-// ── StockhamGPUTraversalStrategy ────────────────────────────────────────────
-//
-// Ping-pong between d_data and an internal scratch buffer.  After log2(N)
-// passes the result is in whichever buffer last received a write; if that is
-// the scratch, one device-to-device copy brings it back to d_data.
-// No digit-reversal permute is needed — that is the whole point of Stockham.
-
-void StockhamGPUTraversalStrategy::run(Complex* d_data, std::size_t n,
-                                       Direction dir,
-                                       const IGPURadix& /*radix*/) const {
-    if (n <= 1) return;
-
-    GPU::DeviceBuf scratch(n);
-
-    auto* ping = reinterpret_cast<double2*>(d_data);
-    double2* pong = scratch.ptr;
-
-    const int  inv   = (dir == Direction::Inverse) ? 1 : 0;
-    const auto un    = static_cast<unsigned>(n);
-    int        passes = 0;
-
-    for (unsigned h = 1; h < un; h *= 2, ++passes) {
-        k_stockham_pass<<<blocks_for(un), kBlock>>>(ping, pong, un, h, inv);
-        check_cuda(cudaGetLastError(), "stockham_pass");
-        std::swap(ping, pong);
-    }
-
-    // After an odd number of passes the result is in ping (scratch).
-    // pong is then the original d_data buffer; copy result back into it.
-    if (passes & 1) {
-        check_cuda(cudaMemcpy(pong, ping, n * sizeof(double2),
-                              cudaMemcpyDeviceToDevice),
-                   "stockham D2D copy");
-    }
 }
 
 }  // namespace GPU
