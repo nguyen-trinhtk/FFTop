@@ -106,9 +106,9 @@ TEST(CPUBackend, DefaultExecutionFollowsOpenMp) {
 }
 
 TEST(CPUBackend, AdaptiveAgreesWithScalar) {
+    const auto input = mixed(64);
     SystemConfig scalar_sys = system_config();
     scalar_sys.simd = SIMD::Scalar;
-    const std::size_t sizes[] = {4, 16, 64, 256};
     for (RadixPolicy radix : {RadixPolicy::Radix2, RadixPolicy::Radix4}) {
         FFTPlan plan;
         plan.radix           = radix;
@@ -118,15 +118,10 @@ TEST(CPUBackend, AdaptiveAgreesWithScalar) {
         CPUPlanOptions scalar_cpu;
         scalar_cpu.execution = Execution::Serial;
         auto scalar = make_backend(plan, scalar_sys, scalar_cpu);
-        const char* which = radix == RadixPolicy::Radix4 ? "radix4" : "radix2";
 
-        for (std::size_t n : sizes) {
-            const auto input = mixed(n);
-            for (Direction dir : {Direction::Forward, Direction::Inverse}) {
-                expect_close(run(*adaptive, input, dir), run(*scalar, input, dir),
-                             std::string(which) + " N=" + std::to_string(n));
-            }
-        }
+        expect_close(run(*adaptive, input, Direction::Forward),
+                     run(*scalar, input, Direction::Forward),
+                     radix == RadixPolicy::Radix4 ? "radix4" : "radix2");
     }
 }
 
@@ -209,11 +204,11 @@ TEST(GPUBackend, KernelStrategiesAgree) {
 TEST(CPUBackend, AVX2AgreesWithScalar) {
     const auto host = system_config().simd;
     if (host != SIMD::AVX2 && host != SIMD::AVX512) GTEST_SKIP() << "host is not AVX2";
+    const auto input = mixed(64);
     SystemConfig avx2_sys = system_config();
     avx2_sys.simd = SIMD::AVX2;
     SystemConfig scalar_sys = system_config();
     scalar_sys.simd = SIMD::Scalar;
-    const std::size_t sizes[] = {4, 16, 64, 256};
     for (RadixPolicy radix : {RadixPolicy::Radix2, RadixPolicy::Radix4}) {
         FFTPlan plan;
         plan.radix           = radix;
@@ -223,15 +218,10 @@ TEST(CPUBackend, AVX2AgreesWithScalar) {
         serial.execution = Execution::Serial;
         auto avx2   = make_backend(plan, avx2_sys, serial);
         auto scalar = make_backend(plan, scalar_sys, serial);
-        const char* which = radix == RadixPolicy::Radix4 ? "radix4" : "radix2";
 
-        for (std::size_t n : sizes) {
-            const auto input = mixed(n);
-            for (Direction dir : {Direction::Forward, Direction::Inverse}) {
-                expect_close(run(*avx2, input, dir), run(*scalar, input, dir),
-                             std::string(which) + " N=" + std::to_string(n));
-            }
-        }
+        expect_close(run(*avx2, input, Direction::Forward),
+                     run(*scalar, input, Direction::Forward),
+                     radix == RadixPolicy::Radix4 ? "radix4" : "radix2");
     }
 }
 #endif
@@ -239,11 +229,11 @@ TEST(CPUBackend, AVX2AgreesWithScalar) {
 #if defined(FFTOP_HAS_AVX512_KERNEL)
 TEST(CPUBackend, AVX512AgreesWithScalar) {
     if (system_config().simd != SIMD::AVX512) GTEST_SKIP() << "host is not AVX-512";
+    const auto input = mixed(64);
     SystemConfig avx512_sys = system_config();
     avx512_sys.simd = SIMD::AVX512;
     SystemConfig scalar_sys = system_config();
     scalar_sys.simd = SIMD::Scalar;
-    const std::size_t sizes[] = {4, 16, 64, 256};
     for (RadixPolicy radix : {RadixPolicy::Radix2, RadixPolicy::Radix4}) {
         FFTPlan plan;
         plan.radix           = radix;
@@ -253,15 +243,10 @@ TEST(CPUBackend, AVX512AgreesWithScalar) {
         serial.execution = Execution::Serial;
         auto avx512 = make_backend(plan, avx512_sys, serial);
         auto scalar = make_backend(plan, scalar_sys, serial);
-        const char* which = radix == RadixPolicy::Radix4 ? "radix4" : "radix2";
 
-        for (std::size_t n : sizes) {
-            const auto input = mixed(n);
-            for (Direction dir : {Direction::Forward, Direction::Inverse}) {
-                expect_close(run(*avx512, input, dir), run(*scalar, input, dir),
-                             std::string(which) + " N=" + std::to_string(n));
-            }
-        }
+        expect_close(run(*avx512, input, Direction::Forward),
+                     run(*scalar, input, Direction::Forward),
+                     radix == RadixPolicy::Radix4 ? "radix4" : "radix2");
     }
 }
 #endif

@@ -10,5 +10,5 @@ three-kernel sweep from `bench/config/gpu_stockham.yaml`:
 It plots runtime, effective bandwidth, estimated global-memory traffic, and
 throughput (\(N / t\)).
 
-If this branch is not on GitHub yet, upload the repo (or mount Drive) so
-`/content/FFTop` exists before the build cell.
+Open the notebook from GitHub (`nguyen-trinhtk/FFTop`, `main`). The clone cell
+pulls `https://github.com/nguyen-trinhtk/FFTop.git` into `/content/FFTop`.
