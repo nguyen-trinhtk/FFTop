@@ -4,33 +4,6 @@ FFT-op is a C++ FFT library optimized for CPU and GPUs. The goal is to explore d
 
 For the full optimization walkthrough, please view this [worklog](./doc/Worklog.md).
 
-## Usage
-
-```bash
-cmake -B build && cmake --build build
-```
-
-CUDA is enabled automatically when a CUDA compiler is available. Pass `-DFFTOP_ENABLE_CUDA=OFF` to force a CPU-only build. OpenMP is similar (`-DFFTOP_ENABLE_OPENMP=OFF`).
-
-The main API is `FFTop::fft()`:
-
-```cpp
-FFTop::fft(x);  // HardwareTarget::Auto
-FFTop::fft(x, {HardwareTarget::CPU, Direction::Forward});
-FFTop::fft(x, {HardwareTarget::GPU, Direction::Inverse});
-```
-
-If GPU is requested but CUDA is not usable, execution falls back to CPU.
-
-Inverse FFTs are unnormalized (no `/N`). Sizes must be a power of two.
-
-Run tests and benchmarks with:
-
-```bash
-ctest --test-dir build
-./bench/bench-sweep.sh
-```
-
 ## Software support
 
 Currently, FFT-op detects available support for:
