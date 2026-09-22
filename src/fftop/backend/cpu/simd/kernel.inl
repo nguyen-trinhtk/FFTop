@@ -4,6 +4,8 @@
 //
 // W is the full-N forward table: W[k] = cis(-2π k / N).
 // Stage twiddle W_order^{m k} = W[m k · (N / order)]. Inverse is conj.
+// A SIMD pack starting at k must use m * (k + lane), which is load_w(W, k, m * step).
+// load_w(W, m * k, step) is only right for a one-wide kernel.
 
 // Load twiddle factor
 ISA::Pack load_w(const Complex* W, std::size_t k, std::size_t step, Direction dir) {
@@ -67,9 +69,9 @@ void radix4(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
     std::size_t k = 0;
     for (; k + ISA::width <= stride; k += ISA::width) {
         const ISA::Pack a0 = ISA::load(x0[k]);
-        const ISA::Pack a1 = ISA::cmul(load_w(W,     k, step, dir), ISA::load(x1[k]));
-        const ISA::Pack a2 = ISA::cmul(load_w(W, 2 * k, step, dir), ISA::load(x2[k]));
-        const ISA::Pack a3 = ISA::cmul(load_w(W, 3 * k, step, dir), ISA::load(x3[k]));
+        const ISA::Pack a1 = ISA::cmul(load_w(W, k,     step, dir), ISA::load(x1[k]));
+        const ISA::Pack a2 = ISA::cmul(load_w(W, k, 2 * step, dir), ISA::load(x2[k]));
+        const ISA::Pack a3 = ISA::cmul(load_w(W, k, 3 * step, dir), ISA::load(x3[k]));
 
         const ISA::Pack even_sum  = ISA::add(a0, a2);
         const ISA::Pack even_diff = ISA::sub(a0, a2);
@@ -85,9 +87,9 @@ void radix4(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
     }
     for (; k < stride; ++k) {
         const Complex a0 = x0[k];
-        const Complex a1 = twiddle_at(W,     k, step, dir) * x1[k];
-        const Complex a2 = twiddle_at(W, 2 * k, step, dir) * x2[k];
-        const Complex a3 = twiddle_at(W, 3 * k, step, dir) * x3[k];
+        const Complex a1 = twiddle_at(W, k,     step, dir) * x1[k];
+        const Complex a2 = twiddle_at(W, k, 2 * step, dir) * x2[k];
+        const Complex a3 = twiddle_at(W, k, 3 * step, dir) * x3[k];
 
         const Complex even_sum  = a0 + a2;
         const Complex even_diff = a0 - a2;
