@@ -7,6 +7,11 @@
 
 namespace FFTop {
 
+bool GPUBackend::is_available() const {
+    int count = 0;
+    return cudaGetDeviceCount(&count) == cudaSuccess && count > 0;
+}
+
 GPUFFTBackend::GPUFFTBackend(std::unique_ptr<GPU::IGPURadix>             radix,
                              std::unique_ptr<GPU::IGPUTraversalStrategy> traversal,
                              std::string                                 name)

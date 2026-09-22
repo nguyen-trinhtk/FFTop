@@ -76,4 +76,4 @@ python bench/bench.py \
 Writes runtime, effective bandwidth, estimated global traffic, and throughput
 plots (`gpu-kernel-strategies_*.png` plus a combined `_metrics.png`).
 
-For Colab, run `gpu-notebooks/stockham_sweep_colab.ipynb`.
+For Colab, open `gpu-notebooks/stockham_sweep_colab.ipynb` from the `colab-gpu` branch.

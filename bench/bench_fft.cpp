@@ -10,7 +10,9 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <exception>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -324,7 +326,13 @@ bool run_spec(const BenchSpec& spec, bool dry, std::string& err) {
         }
     }
 
-    auto backend = FFTop::make_backend(plan, sys, cpu);
+    std::unique_ptr<FFTop::IBackend> backend;
+    try {
+        backend = FFTop::make_backend(plan, sys, cpu);
+    } catch (const std::exception& e) {
+        err = e.what();
+        return false;
+    }
 #if defined(FFTOP_ENABLE_CUDA)
     if (spec.backend == "GPU") {
         auto* gpu = dynamic_cast<FFTop::GPUFFTBackend*>(backend.get());

@@ -10,5 +10,5 @@ three-kernel sweep from `bench/config/gpu_stockham.yaml`:
 It plots runtime, effective bandwidth, estimated global-memory traffic, and
 throughput (\(N / t\)).
 
-Open the notebook from GitHub (`nguyen-trinhtk/FFTop`, `main`). The clone cell
-pulls `https://github.com/nguyen-trinhtk/FFTop.git` into `/content/FFTop`.
+Open the notebook from GitHub (`nguyen-trinhtk/FFTop`, branch `colab-gpu`).
+The clone cell pulls that branch into `/content/FFTop`.
