@@ -1,10 +1,12 @@
 #pragma once
 
+// x86
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
 #define FFTOP_HAS_AVX2_KERNEL 1
 #define FFTOP_HAS_AVX512_KERNEL 1
 #endif
 
+// ARM 64
 #if defined(__aarch64__) || defined(_M_ARM64)
 #define FFTOP_HAS_NEON_KERNEL 1
 #endif

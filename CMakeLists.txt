@@ -87,11 +87,11 @@ if(FFTOP_ENABLE_CUDA)
         target_sources(fftop PRIVATE
             src/fftop/backend/gpu/gpu_backend.cpp
             src/fftop/backend/gpu/gpu_factory.cpp
-            src/fftop/backend/gpu/cooley_tukey.cpp
             src/fftop/backend/gpu/gpu_fft.cu
+            src/fftop/backend/gpu/stockham_fft.cu
         )
         target_link_libraries(fftop PUBLIC CUDA::cudart)
-        target_compile_definitions(fftop PRIVATE FFTOP_ENABLE_CUDA)
+        target_compile_definitions(fftop PUBLIC FFTOP_ENABLE_CUDA)
         set_target_properties(fftop PROPERTIES
             CUDA_STANDARD 17
             CUDA_STANDARD_REQUIRED ON

@@ -21,7 +21,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DEFAULT_CONFIG = HERE / "config" / "default.yaml"
 
-SCHEMA = 2
+SCHEMA = 3
 SPEC_COLUMNS = (
     "backend,traversal,radix,simd,execution,threads,size"
 )
@@ -46,6 +46,7 @@ class Host:
     cpu_threads: int = 1
     simd_kernel: str = "scalar"
     openmp: bool = False
+    cuda: bool = False
 
 
 @dataclass(frozen=True)
@@ -174,8 +175,14 @@ def _vary_axes(variants: Iterable[Variant]) -> tuple[str, ...]:
     variants = tuple(variants)
     if len(variants) < 2:
         return ()
+    backends = {v.backend for v in variants}
+    if backends == {"GPU"}:
+        return tuple(
+            field for field in ("traversal",)
+            if len({getattr(v, field) for v in variants}) > 1
+        )
     if any(v.backend != "CPU" for v in variants):
-        return ("backend",) if len({v.backend for v in variants}) > 1 else ()
+        return ("backend",) if len(backends) > 1 else ()
     return tuple(
         field for field in _CPU_FIELDS
         if len({getattr(v, field) for v in variants}) > 1
@@ -237,6 +244,8 @@ def host_ok(cmp: Comparison, host: Host) -> str | None:
         return "no SIMD kernel on this host"
     if "needs_omp" in cmp.gates and not host.openmp:
         return "OpenMP not enabled"
+    if "needs_gpu" in cmp.gates and not host.cuda:
+        return "no CUDA device"
     return None
 
 
@@ -288,6 +297,7 @@ def host_from_dict(data: dict) -> Host:
         cpu_threads=int(data.get("cpu_threads", 1)),
         simd_kernel=str(data.get("simd", data.get("simd_kernel", "scalar"))),
         openmp=bool(data.get("openmp", False)),
+        cuda=bool(data.get("cuda", False)),
     )
 
 
@@ -299,7 +309,7 @@ def _norm(row: dict[str, str], key: str, default: str = "-") -> str:
 def row_matches(row: dict[str, str], variant: Variant) -> bool:
     if _norm(row, "backend") != variant.backend:
         return False
-    if variant.backend != "CPU":
+    if variant.backend == "naive-dft":
         return True
     return (
         _norm(row, "traversal") == variant.traversal
@@ -311,7 +321,7 @@ def row_matches(row: dict[str, str], variant: Variant) -> bool:
 
 
 def infer_host(rows: list[dict[str, str]]) -> Host:
-    simd, threads, openmp = "scalar", 1, False
+    simd, threads, openmp, cuda = "scalar", 1, False, False
     for row in rows:
         value = _norm(row, "simd", "scalar")
         if value not in ("scalar", "-"):
@@ -319,10 +329,12 @@ def infer_host(rows: list[dict[str, str]]) -> Host:
         threads = max(threads, int(row.get("threads") or 1))
         if _norm(row, "execution") == "parallel":
             openmp = True
-    return Host(cpu_threads=threads, simd_kernel=simd, openmp=openmp)
+        if _norm(row, "backend") == "GPU":
+            cuda = True
+    return Host(cpu_threads=threads, simd_kernel=simd, openmp=openmp, cuda=cuda)
 
 
-def series_for(rows, cmp: Comparison, host: Host) -> dict[str, list[tuple[int, float]]]:
+def series_for(rows, cmp: Comparison, host: Host, y_key: str = "ms") -> dict[str, list[tuple[int, float]]]:
     series: dict[str, list[tuple[int, float]]] = defaultdict(list)
     variants = expand_variants(cmp, host)
     for row in rows:
@@ -330,13 +342,15 @@ def series_for(rows, cmp: Comparison, host: Host) -> dict[str, list[tuple[int, f
         k = n.bit_length() - 1
         if k < cmp.min_k or k > cmp.max_k:
             continue
+        if y_key not in row:
+            continue
         for variant in variants:
             if not size_ok(cmp, variant, n):
                 continue
             resolved = resolve(variant, host, n)
             if not row_matches(row, resolved):
                 continue
-            series[resolved.series_name()].append((n, float(row["ms"])))
+            series[resolved.series_name()].append((n, float(row[y_key])))
             break
     for points in series.values():
         points.sort()
@@ -364,7 +378,8 @@ def apply_scale(ax, axis: str, scale: str) -> None:
         ax.set_yscale("log")
 
 
-def plot_time_vs_n(series, order, output: Path, title: str, xscale: str, yscale: str) -> None:
+def plot_time_vs_n(series, order, output: Path, title: str, xscale: str, yscale: str,
+                   ylabel: str = "time (ms)") -> None:
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -374,7 +389,7 @@ def plot_time_vs_n(series, order, output: Path, title: str, xscale: str, yscale:
     apply_scale(ax, "x", xscale)
     apply_scale(ax, "y", yscale)
     ax.set_xlabel("N")
-    ax.set_ylabel("time (ms)")
+    ax.set_ylabel(ylabel)
     ax.set_title(title)
     ax.grid(True, which="both", linestyle=":", linewidth=0.6)
     ax.legend()
@@ -416,8 +431,54 @@ def plot_speedup(series, output: Path, title: str) -> None:
     plt.close(fig)
 
 
+GPU_METRICS = (
+    ("ms", "Runtime (ms)", "time (ms)", "linear"),
+    ("effective_bandwidth_gbps", "Effective bandwidth (GB/s)", "GB/s", "linear"),
+    ("throughput_gsamples_s", "Throughput (Gsamples/s)", "Gsamples/s", "linear"),
+    ("global_mem_bytes", "Estimated global memory traffic", "bytes", "log"),
+)
+
+
+def plot_gpu_metrics(rows, cmp: Comparison, out_dir: Path, host: Host) -> list[Path]:
+    import matplotlib.pyplot as plt
+
+    written = []
+    panels = []
+    for key, title, ylabel, yscale in GPU_METRICS:
+        series = series_for(rows, cmp, host, y_key=key)
+        if not series:
+            print(f"skip plot {cmp.id} {key}: no matching rows", file=sys.stderr)
+            continue
+        order = series_order(cmp, host, series)
+        path = out_dir / f"{cmp.id}_{key}.png"
+        plot_time_vs_n(series, order, path, f"{cmp.title}: {title}", cmp.xscale, yscale, ylabel)
+        written.append(path)
+        panels.append((series, order, title, ylabel, yscale))
+
+    if len(panels) == 4:
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8), constrained_layout=True)
+        for ax, (series, order, title, ylabel, yscale) in zip(axes.ravel(), panels):
+            for name in order:
+                points = series[name]
+                ax.plot([n for n, _ in points], [y for _, y in points], marker="o", label=name)
+            apply_scale(ax, "x", cmp.xscale)
+            apply_scale(ax, "y", yscale)
+            ax.set_title(title)
+            ax.set_xlabel("N")
+            ax.set_ylabel(ylabel)
+            ax.grid(True, which="both", linestyle=":", linewidth=0.6)
+        axes[0, 0].legend()
+        combined = out_dir / f"{cmp.id}_metrics.png"
+        fig.savefig(combined, dpi=150)
+        plt.close(fig)
+        written.append(combined)
+    return written
+
+
 def plot_comparison(rows, cmp: Comparison, out_dir: Path, host: Host | None = None) -> list[Path]:
     host = host or infer_host(rows)
+    if cmp.plot == "gpu_metrics":
+        return plot_gpu_metrics(rows, cmp, out_dir, host)
     series = series_for(rows, cmp, host)
     if not series:
         print(f"skip plot {cmp.id}: no matching rows", file=sys.stderr)
@@ -482,10 +543,21 @@ def self_check(comparisons: tuple[Comparison, ...]) -> None:
     check_comparisons(comparisons)
     if parse_scale("scalar") != "linear" or parse_scale("log2") != "log":
         raise AssertionError("scale aliases")
+    by_id = {c.id: c for c in comparisons}
+    if "scalar-vs-simd" not in by_id:
+        host = Host(cpu_threads=8, simd_kernel="neon", openmp=True, cuda=True)
+        jobs = jobs_for(host, comparisons)
+        if not jobs:
+            raise AssertionError("expected GPU jobs on a cuda host")
+        none = Host(cpu_threads=1, simd_kernel="scalar", openmp=False, cuda=False)
+        skipped = {c.id for c in comparisons if host_ok(c, none)}
+        if skipped != {c.id for c in comparisons if "needs_gpu" in c.gates}:
+            raise AssertionError(f"unexpected skips on CPU host: {skipped}")
+        return
     first = comparisons[0]
     if first.xscale != "log" or first.yscale != "linear":
         raise AssertionError("default axis scales")
-    host = Host(cpu_threads=8, simd_kernel="neon", openmp=True)
+    host = Host(cpu_threads=8, simd_kernel="neon", openmp=True, cuda=True)
     jobs = jobs_for(host, comparisons)
     if not jobs:
         raise AssertionError("expected jobs on a neon/8/omp host")
@@ -498,7 +570,6 @@ def self_check(comparisons: tuple[Comparison, ...]) -> None:
         raise AssertionError(f"unexpected skips on scalar host: {skipped}")
     if any(not is_power_of(j.size, 4) for j in jobs if j.variant.radix == "4"):
         raise AssertionError("radix-4 job on a non 4^p size")
-    by_id = {c.id: c for c in comparisons}
     check_comparisons([Comparison(
         id="one-axis", title="x", question="x",
         variants=by_id["scalar-vs-simd"].variants,
@@ -532,7 +603,7 @@ def main() -> None:
     comparisons = load_config(args.config)
     if args.check:
         self_check(comparisons)
-        host = Host(cpu_threads=8, simd_kernel="neon", openmp=True)
+        host = Host(cpu_threads=8, simd_kernel="neon", openmp=True, cuda=True)
         jobs = jobs_for(host, comparisons)
         print(f"{len(jobs)} jobs on neon/8/omp")
         for cmp in comparisons:
@@ -568,7 +639,7 @@ def main() -> None:
         raise SystemExit(f"missing {args.bench} (build fftop_bench first)")
 
     if args.dry_run:
-        host = Host(cpu_threads=8, simd_kernel="neon", openmp=True)
+        host = Host(cpu_threads=8, simd_kernel="neon", openmp=True, cuda=True)
         system = {
             "schema": SCHEMA,
             "note": "dry-run host fixture",
