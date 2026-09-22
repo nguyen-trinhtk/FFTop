@@ -143,6 +143,89 @@ TEST(MakeBackend, ExplicitGpuRequiresDevice) {
     }
 }
 
+TEST(GPUBackend, KernelStrategiesMatchDft) {
+    const GPUKernelStrategy strategies[] = {
+        GPUKernelStrategy::CooleyTukeyGlobal,
+        GPUKernelStrategy::StockhamGlobal,
+        GPUKernelStrategy::StockhamShared,
+    };
+    const std::size_t sizes[] = {1, 2, 4, 8, 16, 32, 64, 256, 512};
+
+    for (auto strategy : strategies) {
+        FFTPlan plan;
+        plan.hardware_target = HardwareTarget::GPU;
+        plan.radix           = RadixPolicy::Radix2;
+        plan.gpu_strategy    = strategy;
+        try {
+            auto backend = make_backend(plan);
+            if (!backend || !backend->is_available()) continue;
+            SCOPED_TRACE(backend->name());
+            expect_matches_dft(*backend, sizes);
+        } catch (const std::runtime_error&) {
+            SUCCEED();
+            return;
+        }
+    }
+}
+
+TEST(GPUBackend, KernelStrategiesAgree) {
+    const auto input = mixed(256);
+    FFTPlan base;
+    base.hardware_target = HardwareTarget::GPU;
+    base.radix = RadixPolicy::Radix2;
+
+    try {
+        FFTPlan ct = base;
+        ct.gpu_strategy = GPUKernelStrategy::CooleyTukeyGlobal;
+        auto ct_backend = make_backend(ct);
+
+        FFTPlan sg = base;
+        sg.gpu_strategy = GPUKernelStrategy::StockhamGlobal;
+        auto sg_backend = make_backend(sg);
+
+        FFTPlan ss = base;
+        ss.gpu_strategy = GPUKernelStrategy::StockhamShared;
+        auto ss_backend = make_backend(ss);
+
+        const auto ref = run(*ct_backend, input, Direction::Forward);
+        expect_close(run(*sg_backend, input, Direction::Forward), ref, "stockham-global");
+        expect_close(run(*ss_backend, input, Direction::Forward), ref, "stockham-shared");
+
+        const auto big = mixed(1024);
+        const auto big_ref = run(*ct_backend, big, Direction::Forward);
+        expect_close(run(*sg_backend, big, Direction::Forward), big_ref, "stockham-global N=1024");
+        expect_close(run(*ss_backend, big, Direction::Forward), big_ref, "stockham-shared N=1024");
+    } catch (const std::runtime_error&) {
+        SUCCEED();
+    }
+}
+
+#if defined(FFTOP_HAS_AVX2_KERNEL)
+TEST(CPUBackend, AVX2AgreesWithScalar) {
+    const auto host = system_config().simd;
+    if (host != SIMD::AVX2 && host != SIMD::AVX512) GTEST_SKIP() << "host is not AVX2";
+    const auto input = mixed(64);
+    SystemConfig avx2_sys = system_config();
+    avx2_sys.simd = SIMD::AVX2;
+    SystemConfig scalar_sys = system_config();
+    scalar_sys.simd = SIMD::Scalar;
+    for (RadixPolicy radix : {RadixPolicy::Radix2, RadixPolicy::Radix4}) {
+        FFTPlan plan;
+        plan.radix           = radix;
+        plan.hardware_target = HardwareTarget::CPU;
+
+        CPUPlanOptions serial;
+        serial.execution = Execution::Serial;
+        auto avx2   = make_backend(plan, avx2_sys, serial);
+        auto scalar = make_backend(plan, scalar_sys, serial);
+
+        expect_close(run(*avx2, input, Direction::Forward),
+                     run(*scalar, input, Direction::Forward),
+                     radix == RadixPolicy::Radix4 ? "radix4" : "radix2");
+    }
+}
+#endif
+
 #if defined(FFTOP_HAS_AVX512_KERNEL)
 TEST(CPUBackend, AVX512AgreesWithScalar) {
     if (system_config().simd != SIMD::AVX512) GTEST_SKIP() << "host is not AVX-512";
