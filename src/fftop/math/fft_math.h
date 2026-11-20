@@ -2,38 +2,36 @@
 
 #include <cstddef>
 
-// CUDA: available both host & device
 #ifdef __CUDACC__
-#define FFTOP_HOST_DEVICE __host__ __device__
+#define FFTOP_HOST_DEVICE __host__ __device__ // Host and device each receive a version
 #else
-#define FFTOP_HOST_DEVICE
+#define FFTOP_HOST_DEVICE // empty placeholder
 #endif
 
 namespace FFTop::Math {
+// Helpers
 namespace {
-// check if n is a power of 2
-FFTOP_HOST_DEVICE 
-inline bool is_power_of_two(std::size_t n) {
-    return n != 0 && (n & (n - 1)) == 0;
-}
-
-// n must be non-zero
-// return number of trailing 0 bits
-FFTOP_HOST_DEVICE 
-inline unsigned trailing_zeros(std::size_t n) {
-    unsigned c = 0;
-    while ((n & 1) == 0) {
-        n >>= 1;
-        ++c;
+    FFTOP_HOST_DEVICE 
+    inline bool is_power_of_two(std::size_t n) {
+        return (n != 0) && (n & (n - 1)) == 0;
     }
-    return c;
-}
+
+    FFTOP_HOST_DEVICE 
+    inline unsigned trailing_zeros(std::size_t n) {
+        // return number of trailing 0 bits (n must be nonzero)
+        unsigned c = 0;
+        while ((n & 1) == 0) {
+            n >>= 1;
+            ++c;
+        }
+        return c;
+    }
 }  // namespace 
 
 FFTOP_HOST_DEVICE 
 inline bool is_power_of(std::size_t n, std::size_t base) {
     if (n == 0 || base < 2) return false;
-    // fast path for power of 2
+    // fast path for power-of-2 base
     if (is_power_of_two(base)) {
         if (!is_power_of_two(n)) return false;
         const unsigned base_exp = trailing_zeros(base);
@@ -46,7 +44,7 @@ inline bool is_power_of(std::size_t n, std::size_t base) {
     return n == 1;
 }
 
-// Map index i to its digit-reversed partner in [0, n) with the given radix.
+// Digit-reverse i in radix R
 FFTOP_HOST_DEVICE
 inline std::size_t digit_reverse(std::size_t index, std::size_t n, std::size_t radix) {
     // fast path for power of 2
@@ -69,5 +67,4 @@ inline std::size_t digit_reverse(std::size_t index, std::size_t n, std::size_t r
     }
     return reversed;
 }
-
 }  // namespace FFTop::Math

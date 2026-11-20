@@ -1,6 +1,7 @@
 #include "fftop/plan/planner.h"
 
 #include "fftop/math/fft_math.h"
+#include "fftop/math/twiddle.h"
 
 namespace FFTop {
 Planner::Planner(SystemConfig system, PlanCache* cache)
@@ -25,6 +26,8 @@ FFTPlan Planner::make_plan(std::size_t size, const FFTOptions& options) {
     } else {
         plan.hardware_target = options.hardware_target;
     }
+
+    plan.twiddles = default_twiddles().get(size, plan.radix == RadixPolicy::Radix4 ? 4 : 2);
 
     if (this->cache_) {
         this->cache_->store(plan);
