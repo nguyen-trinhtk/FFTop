@@ -7,9 +7,9 @@
 #include <optional>
 #include <unordered_map>
 
-static constexpr std::size_t FNV_PRIME = 0x9e3779b9;
-
 namespace FFTop {
+
+inline constexpr std::size_t FNV_PRIME = 0x9e3779b9;
 
 // Cache key
 struct CacheKey {

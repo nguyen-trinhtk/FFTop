@@ -3,17 +3,18 @@
 #include <stdexcept>
 
 namespace FFTop {
+namespace {
 // File-private helpers
-static constexpr Real K_TWO_PI = Real(6.283185307179586476925286766559L);
+constexpr Real K_TWO_PI = Real(6.283185307179586476925286766559L);
 
-static Complex cis_neg(std::size_t num, std::size_t den) {
+Complex cis_neg(std::size_t num, std::size_t den) {
     // cis(-2pi * num / den)
     // with cis(theta) = cos(theta) - i * sin(theta))
     const Real angle = -K_TWO_PI * Real(num) / Real(den);
     return {std::cos(angle), std::sin(angle)};
 }
 
-static std::vector<Complex> build_stages(std::size_t n, std::size_t radix) {
+std::vector<Complex> build_stages(std::size_t n, std::size_t radix) {
     // Each stage i with stride s = (radix)^i will holds s twiddles
     // and is preceded by s - 1 twiddles
     std::vector<Complex> w;
@@ -30,6 +31,7 @@ static std::vector<Complex> build_stages(std::size_t n, std::size_t radix) {
     }
     return w;
 }
+}  // namespace
 
 // Twiddle cache class methods
 std::shared_ptr<const Twiddles> TwiddleCache::get(std::size_t n, std::size_t radix) {

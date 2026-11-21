@@ -6,6 +6,7 @@
 // shared type definitions
 namespace FFTop {
 
+// TODO: other data type
 using Real    = double;
 using Complex = std::complex<Real>;
 using Buffer  = std::vector<Complex>;

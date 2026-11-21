@@ -7,7 +7,7 @@ A running development of optimizations.
 The original Discrete Fourier Transform (DFT) has time complexity of $O(n^2)$. By partitioning the algorithm recursively on even and odd sub-data, Cooley and Tukey's divide-and-conquer algorithm achieved a $O(n \log n)$ complexity.
 
 #### Iterative rewriting of Cooley-Tukey
-The recursive algorithm was nice, but lack the ability to parallelize efficiently due to the dependency nature of recursion. Henceby, the iterative version is established, to support foreseeing the ops more clearly. Here each butterfly in the same stage is independent, and successive stages are dependent. Help speed-up due to scaling workload out to multiple threads.
+The recursive algorithm was nice, but lack the ability to parallelize efficiently due to the dependency nature of recursion. Henceby, the iterative version is established, to support foreseeing the ops more clearly. Here each butterfly in the same stage is independent, and successive stages are dependent. It helps speed-up due to scaling workload out to multiple threads.
 
 #### Four-step Bailey for big N
 This variant targets big N that couldn't fit in cache otherwise. Basically, the idea is to decompose 1D FFT with $N$ points into a 2D FFT of size $n_1 \times n_2$, where $n_1$ and $n_2$ would fit into cache. 
