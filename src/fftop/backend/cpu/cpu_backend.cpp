@@ -11,8 +11,7 @@ CPUBackend::CPUBackend(std::unique_ptr<CPU::IRadixB>         butterfly,
 
 void CPUBackend::execute(const FFTPlan& plan, const Buffer& input, Buffer& output) {
     output = input;
-    const auto T = plan_twiddles(plan, butterfly_->radix());
-    traversal_strategy_->run(output, plan.size, plan.direction, *butterfly_, parallel_,
-                             *T);
+    const Twiddles& T = require_twiddles(plan, butterfly_->radix());
+    traversal_strategy_->run(output, plan.size, plan.direction, *butterfly_, parallel_, T);
 }
 }  // namespace FFTop

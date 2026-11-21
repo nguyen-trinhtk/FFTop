@@ -1,4 +1,4 @@
-#include "fftop/backend/cpu/traversal_strategy.h"
+#include "fftop/backend/cpu/traversal.h"
 #include "fftop/math/fft_math.h"
 
 #include <cassert>

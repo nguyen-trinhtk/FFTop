@@ -2,7 +2,7 @@
 
 #include "fftop/types.h"
 #include "fftop/backend/cpu/butterfly.h"
-#include "fftop/backend/cpu/execution_mode.h"
+#include "fftop/backend/cpu/parallel.h"
 #include "fftop/math/twiddle.h"
 
 #include <cstddef>
