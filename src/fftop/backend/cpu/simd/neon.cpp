@@ -23,9 +23,6 @@ struct NEON {
     static void store(Complex& z, Pack v) {
         vst1q_f64(reinterpret_cast<double*>(&z), v);
     }
-    static Pack load_pack(const Real* p) { 
-        return vld1q_f64(p); 
-    }
 
     static Pack add(Pack a, Pack b) { 
         return vaddq_f64(a, b); 
@@ -57,8 +54,8 @@ struct NEON {
     }
 };
 
-template void radix2<NEON>(Buffer&, std::size_t, std::size_t, Direction, const Complex*, std::size_t);
-template void radix4<NEON>(Buffer&, std::size_t, std::size_t, Direction, const Complex*, std::size_t);
+template void radix2<NEON>(Buffer&, std::size_t, std::size_t, Direction, const Complex*);
+template void radix4<NEON>(Buffer&, std::size_t, std::size_t, Direction, const Complex*);
 
 }  // namespace FFTop::CPU
 

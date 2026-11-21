@@ -4,44 +4,44 @@
 namespace FFTop::CPU {
 namespace {
 // SIMD kernel function type
-using ButterflyFn = void (*)(Buffer&, std::size_t, std::size_t, Direction, const Complex*, std::size_t);
+using ButterflyFn = void (*)(Buffer&, std::size_t, std::size_t, Direction, const Complex*);
 
 // Picking SIMD implementation
 ButterflyFn pick_radix2(SIMD simd) {
     switch (simd) {
-#if defined(FFTOP_HAS_AVX512_KERNEL)
+#if defined(FFTOP_AVX512)
     case SIMD::AVX512:
-        return radix2_avx512;
+        return radix2<AVX512>;
 #endif
-#if defined(FFTOP_HAS_AVX2_KERNEL)
+#if defined(FFTOP_AVX2)
     case SIMD::AVX2:
-        return radix2_avx2;
+        return radix2<AVX2>;
 #endif
-#if defined(FFTOP_HAS_NEON_KERNEL)
+#if defined(FFTOP_NEON)
     case SIMD::NEON:
-        return radix2_neon;
+        return radix2<NEON>;
 #endif
     default:
-        return radix2_scalar;
+        return radix2<Scalar>;
     }
 }
 
 ButterflyFn pick_radix4(SIMD simd) {
     switch (simd) {
-#if defined(FFTOP_HAS_AVX512_KERNEL)
+#if defined(FFTOP_AVX512)
     case SIMD::AVX512:
-        return radix4_avx512;
+        return radix4<AVX512>;
 #endif
-#if defined(FFTOP_HAS_AVX2_KERNEL)
+#if defined(FFTOP_AVX2)
     case SIMD::AVX2:
-        return radix4_avx2;
+        return radix4<AVX2>;
 #endif
-#if defined(FFTOP_HAS_NEON_KERNEL)
+#if defined(FFTOP_NEON)
     case SIMD::NEON:
-        return radix4_neon;
+        return radix4<NEON>;
 #endif
     default:
-        return radix4_scalar;
+        return radix4<Scalar>;
     }
 }
 
@@ -52,13 +52,12 @@ Radix4::Radix4(SIMD simd) : fn_(pick_radix4(simd)) {}
 
 // Execute
 void Radix2::butterfly(Buffer& data, std::size_t offset, std::size_t stride,
-                       Direction dir, const Complex* W, std::size_t n) const {
-    fn_(data, offset, stride, dir, W, n);
+                       Direction dir, const Complex* Ws) const {
+    fn_(data, offset, stride, dir, Ws);
 }
 
 void Radix4::butterfly(Buffer& data, std::size_t offset, std::size_t stride,
-                       Direction dir, const Complex* W, std::size_t n) const {
-    fn_(data, offset, stride, dir, W, n);
+                       Direction dir, const Complex* Ws) const {
+    fn_(data, offset, stride, dir, Ws);
 }
-
 }  // namespace FFTop::CPU

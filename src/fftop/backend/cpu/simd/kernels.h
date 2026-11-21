@@ -1,36 +1,35 @@
 #pragma once
 
-#include "fftop/backend/cpu/simd/arch.h"
 #include "fftop/types.h"
 
 #include <cstddef>
 
+// Which SIMD kernels this platform builds
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+#define FFTOP_AVX2 1
+#define FFTOP_AVX512 1
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+#define FFTOP_NEON 1
+#endif
+
 namespace FFTop::CPU {
 
-void radix2_scalar(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                   const Complex* W, std::size_t n);
-void radix4_scalar(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                   const Complex* W, std::size_t n);
+// Forward-declare SIMD kernels
+struct Scalar;
+struct AVX2;
+struct AVX512;
+struct NEON;
 
-#if defined(FFTOP_HAS_AVX2_KERNEL)
-void radix2_avx2(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                 const Complex* W, std::size_t n);
-void radix4_avx2(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                 const Complex* W, std::size_t n);
-#endif
+// Generic butterflies over a SIMD kernel, defined in kernels.inl
+// instantiated per SIMD extension (in simd/<extension>.cpp)
+template <class Kernel>
+void radix2(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
+            const Complex* Ws);
 
-#if defined(FFTOP_HAS_AVX512_KERNEL)
-void radix2_avx512(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                   const Complex* W, std::size_t n);
-void radix4_avx512(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                   const Complex* W, std::size_t n);
-#endif
-
-#if defined(FFTOP_HAS_NEON_KERNEL)
-void radix2_neon(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                 const Complex* W, std::size_t n);
-void radix4_neon(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
-                 const Complex* W, std::size_t n);
-#endif
+template <class Kernel>
+void radix4(Buffer& data, std::size_t offset, std::size_t stride, Direction dir,
+            const Complex* Ws);
 
 }  // namespace FFTop::CPU
