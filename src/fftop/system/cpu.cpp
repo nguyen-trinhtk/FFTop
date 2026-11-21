@@ -86,6 +86,7 @@ SIMD x86_simd() {
         return SIMD::Scalar;
     // Check OS register saving and AVX support
     cpuid(1, 0, r);
+    const bool fma     = r[2] & (1u << 12);
     const bool osxsave = r[2] & (1u << 27);
     const bool avx = r[2] & (1u << 28);
     const auto xcr = osxsave ? xcr0() : 0ull;
@@ -98,9 +99,10 @@ SIMD x86_simd() {
         avx512f = r[1] & (1u << 16);
     }
     // Check if OS saves widest-register on context switch
-    if (avx512f && avx && (xcr & 0xE6) == 0xE6) 
+    // Also require FMA
+    if (avx512f && avx && fma && (xcr & 0xE6) == 0xE6)
         return SIMD::AVX512;
-    if (avx2 && avx && (xcr & 0x6) == 0x6)      
+    if (avx2 && avx && fma && (xcr & 0x6) == 0x6)
         return SIMD::AVX2;
     return SIMD::Scalar; // Fallback
 }
@@ -155,9 +157,9 @@ std::string proc_cpuinfo_model() {
 
 std::string detect_cpu_name() {
 #if defined(FFTOP_X86)
-    auto x86_brand = x86_brand();
-    if (!x86_brand.empty()) 
-        return x86_brand;
+    auto x86_name = x86_brand();
+    if (!x86_name.empty())
+        return x86_name;
 #endif
 #if defined(__linux__)
     auto linux_from_proc = proc_cpuinfo_model();
