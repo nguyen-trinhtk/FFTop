@@ -1,47 +1,22 @@
 #pragma once
 
 #include <cstddef>
-#include <functional>
 
 namespace FFTop::CPU {
-// Grain size: no parallel if work is too small
-inline constexpr std::size_t kParallelGrain = 1024;
-
-class IExecutionMode {
-public:
-    virtual ~IExecutionMode() = default;
-    virtual void parallel_for(std::size_t n, std::size_t work_per_item,
-                              std::function<void(std::size_t)> fn) const = 0;
-};
-
-// Naive sequential
-class SerialExecutionMode final : public IExecutionMode {
-public:
-    void parallel_for(std::size_t n, std::size_t /*work_per_item*/,
-                      std::function<void(std::size_t)> fn) const override {
-        for (std::size_t i = 0; i < n; ++i) fn(i);
-    }
-};
-
-// Parallel via OpenMP
-class ParallelExecutionMode final : public IExecutionMode {
-public:
-    void parallel_for(std::size_t n, std::size_t work_per_item,
-                      std::function<void(std::size_t)> fn) const override {
-        // granularity control
-        if (n <= 1 || n * work_per_item < kParallelGrain) {
-            for (std::size_t i = 0; i < n; ++i) fn(i);
-            return;
-        }
-#ifdef FFTOP_ENABLE_OPENMP
-        // OpenMP parallel for loop
-        #pragma omp parallel for schedule(static)
-        for (std::size_t i = 0; i < n; ++i) fn(i);
-#else
-        // fallback to sequential
-        for (std::size_t i = 0; i < n; ++i) fn(i);
-#endif
-    }
-};
-
+inline constexpr std::size_t PARALLEL_GRAIN = 1024;
+// (Signed) loop index for FFTOP_OMP_FOR_IF loops
+using omp_index = std::ptrdiff_t;
+// check if loop worth parallelizing (>= grain size)
+inline bool use_parallel(bool parallel, std::size_t n, std::size_t work_per_item) {
+    return parallel && n > 1 && n * work_per_item >= PARALLEL_GRAIN;
+}
 }  // namespace FFTop::CPU
+
+// Put this directive before a for loop that can possibly 
+// be parallelized when OpenMP is enabled and cond is true
+#define FFTOP_PRAGMA(x) _Pragma(#x)
+#ifdef FFTOP_ENABLE_OPENMP
+#define FFTOP_OMP_FOR_IF(cond) FFTOP_PRAGMA(omp parallel for schedule(static) if(cond))
+#else
+#define FFTOP_OMP_FOR_IF(cond)
+#endif

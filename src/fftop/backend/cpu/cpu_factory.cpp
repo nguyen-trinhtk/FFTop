@@ -24,18 +24,10 @@ std::unique_ptr<CPU::ITraversalStrategy> make_cpu_traversal(Traversal traversal)
     return std::make_unique<CPU::IterativeTraversalStrategy>();
 }
 
-std::unique_ptr<CPU::IExecutionMode> make_cpu_execution(Execution execution) {
-    switch (execution) {
-        case Execution::Parallel:
-            return std::make_unique<CPU::ParallelExecutionMode>();
-        case Execution::Serial:
-            return std::make_unique<CPU::SerialExecutionMode>();
-    }
-    return std::make_unique<CPU::SerialExecutionMode>();
-}
-
+// OpenMP parallelism or serial
 Execution resolve_execution(const CPUPlanOptions& opts, const SystemConfig& sys) {
-    if (opts.execution) return *opts.execution;
+    if (opts.execution) 
+        return *opts.execution;
     return sys.openmp ? Execution::Parallel : Execution::Serial;
 }
 }  // namespace
@@ -46,6 +38,6 @@ std::unique_ptr<IBackend> make_cpu_backend(const FFTPlan& plan,
     return std::make_unique<CPUBackend>(
         make_cpu_radix(plan.radix, sys.simd),
         make_cpu_traversal(opts.traversal),
-        make_cpu_execution(resolve_execution(opts, sys)));
+        resolve_execution(opts, sys) == Execution::Parallel);
 }
 }  // namespace FFTop
