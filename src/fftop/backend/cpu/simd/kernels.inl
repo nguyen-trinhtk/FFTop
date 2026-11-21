@@ -111,7 +111,7 @@ namespace FFTop::CPU
             const Complex odd_sum = a1 + a3;
             const Complex odd_diff = a1 - a3;
             const Complex odd_turn = forward ? Complex{odd_diff.imag(), -odd_diff.real()}
-                                             : Complex{-odd_diff.imag() odd_diff.real()};
+                                             : Complex{-odd_diff.imag(), odd_diff.real()};
 
             x0[k] = even_sum + odd_sum;
             x1[k] = even_diff + odd_turn;
