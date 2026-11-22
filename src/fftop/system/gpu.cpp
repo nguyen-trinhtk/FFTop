@@ -27,10 +27,10 @@ GPUInfo detect_gpu_info() {
     if (cudaGetDevice(&device) != cudaSuccess ||
         cudaGetDeviceProperties(&prop, device) != cudaSuccess)
         return info;
-    info.name                  = prop.name;
+    info.name = prop.name;
     // Compute capability
-    info.cc_major              = prop.major;
-    info.cc_minor              = prop.minor;
+    info.cc_major = prop.major;
+    info.cc_minor = prop.minor;
     // Block-related info (sm, smem, max threads)
     info.sm_count              = prop.multiProcessorCount;
     info.smem_per_block        = prop.sharedMemPerBlock;
@@ -40,7 +40,7 @@ GPUInfo detect_gpu_info() {
 }
 
 bool detect_nvidia_gpu() {
-    if (detect_cuda()) return true; // cuda available
+    if (detect_cuda()) return true;  // cuda available
 #if defined(_WIN32)
     // Windows
     FILE* pipe = _popen("nvidia-smi -L 2>NUL", "r");

@@ -6,30 +6,28 @@
 
 namespace FFTop {
 namespace {
-    std::string bytes_str(std::size_t b) {
-        // Bytes to string
-        if (b == 0) return "?";
-        if (b % (1u << 20) == 0) 
-            return std::to_string(b >> 20) + "M";
-        if (b % (1u << 10) == 0) 
-            return std::to_string(b >> 10) + "K";
-        return std::to_string(b) + "B";
-    }
+std::string bytes_str(std::size_t b) {
+    // Bytes to string
+    if (b == 0) return "?";
+    if (b % (1u << 20) == 0) return std::to_string(b >> 20) + "M";
+    if (b % (1u << 10) == 0) return std::to_string(b >> 10) + "K";
+    return std::to_string(b) + "B";
+}
 }  // namespace
 
 SystemConfig detect_system_config() {
     SystemConfig cfg;
-    cfg.cpu         = detect_cpu_name();
-    cfg.cpu_threads = detect_thread_count();
-    cfg.cpu_cores   = detect_core_count();
+    cfg.cpu                 = detect_cpu_name();
+    cfg.cpu_threads         = detect_thread_count();
+    cfg.cpu_cores           = detect_core_count();
     const CacheSizes caches = detect_cache_sizes();
-    cfg.l1d_bytes   = caches.l1d;
-    cfg.l2_bytes    = caches.l2;
-    cfg.l3_bytes    = caches.l3;
-    cfg.simd        = detect_simd();
-    cfg.openmp      = detect_openmp();
-    cfg.nvidia_gpu  = detect_nvidia_gpu();
-    cfg.cuda        = detect_cuda();
+    cfg.l1d_bytes           = caches.l1d;
+    cfg.l2_bytes            = caches.l2;
+    cfg.l3_bytes            = caches.l3;
+    cfg.simd                = detect_simd();
+    cfg.openmp              = detect_openmp();
+    cfg.nvidia_gpu          = detect_nvidia_gpu();
+    cfg.cuda                = detect_cuda();
     if (cfg.cuda) cfg.gpu = detect_gpu_info();
     return cfg;
 }
