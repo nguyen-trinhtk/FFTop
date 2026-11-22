@@ -8,3 +8,4 @@ log/
 cursor-playground/
 .cache/
 doc/TODO.md
+compile_commands.json
