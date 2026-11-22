@@ -6,7 +6,9 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <set>
 #include <string>
+#include <utility>
 
 // Include libraries to query cpuid depending on CPU arch/model
 #if defined(__APPLE__)
@@ -14,7 +16,11 @@
 #endif
 
 #if !defined(_WIN32)
-#include <sys/utsname.h>
+#include <sys/utsname.h> // uname()
+#endif
+
+#if defined(__linux__)
+#include <unistd.h> // sysconf() cache sizes
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
@@ -125,6 +131,14 @@ std::string sysctl_str(const char* name) {
     return trim(s);
 }
 
+std::uint64_t sysctl_u64(const char* sysctl_key) {
+    std::uint64_t v = 0; // 32bit answer will fill low bytes
+    size_t n = sizeof v;
+    if (sysctlbyname(sysctl_key, &v, &n, nullptr, 0) != 0)
+        return 0; // missing/error
+    return v;
+}
+
 #endif
 
 #if defined(__linux__)
@@ -151,6 +165,72 @@ std::string proc_cpuinfo_model() {
             fallback = val;
     }
     return fallback;
+}
+
+// Num physical cores
+std::size_t proc_cpuinfo_cores() {
+    std::ifstream in("/proc/cpuinfo");
+    if (!in) return 0;
+    std::set<std::pair<long, long>> cores;
+    long phys = 0;
+    std::string line;
+    while (std::getline(in, line)) {
+        const auto colon = line.find(':');
+        if (colon == std::string::npos) continue;
+        const auto key = trim(line.substr(0, colon));
+        const auto val = trim(line.substr(colon + 1));
+        try {
+            if (key == "physical id") phys = std::stol(val);
+            else if (key == "core id") cores.insert({phys, std::stol(val)});
+        } catch (...) {
+        }
+    }
+    return cores.size();
+}
+
+std::string read_first_line(const std::string& path) {
+    std::ifstream in(path);
+    std::string s;
+    std::getline(in, s);
+    return trim(s);
+}
+
+// String to bytes ( e.g. "32K", "1024K", "16M", "512" -> bytes)
+std::size_t parse_size(const std::string& s) {
+    std::size_t v = 0;
+    std::size_t i = 0;
+    while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i])))
+        v = v * 10 + static_cast<std::size_t>(s[i++] - '0');
+    if (i < s.size()) {
+        switch (std::toupper(static_cast<unsigned char>(s[i]))) {
+            case 'K': v <<= 10; break;
+            case 'M': v <<= 20; break;
+            case 'G': v <<= 30; break;
+            default: break;
+        }
+    }
+    return v;
+}
+
+// Cache sizes seen by cpu0
+CacheSizes sysfs_caches() {
+    CacheSizes c;
+    for (int i = 0; i < 16; ++i) {
+        const std::string dir =
+            "/sys/devices/system/cpu/cpu0/cache/index" + std::to_string(i) + "/";
+        const std::string level = read_first_line(dir + "level");
+        if (level.empty()) 
+            break;
+        const std::string type = read_first_line(dir + "type");
+        const std::size_t size = parse_size(read_first_line(dir + "size"));
+        if (level == "1" && type == "Data")
+            c.l1d = size;
+        else if (level == "2" && type != "Instruction") 
+            c.l2 = size;
+        else if (level == "3" && type != "Instruction") 
+            c.l3 = size;
+    }
+    return c;
 }
 #endif
 }  // namespace
@@ -180,6 +260,41 @@ std::string detect_cpu_name() {
         return u.machine;
 #endif
     return "unknown";
+}
+
+std::size_t detect_core_count() {
+#if defined(__APPLE__)
+    return static_cast<std::size_t>(sysctl_u64("hw.physicalcpu"));
+#elif defined(__linux__)
+    return proc_cpuinfo_cores();
+#else
+    return 0;
+#endif
+}
+
+CacheSizes detect_cache_sizes() {
+    CacheSizes c;
+#if defined(__APPLE__)
+    // Apple Silicon: prefer performance core (perflevel0)
+    c.l1d = static_cast<std::size_t>(sysctl_u64("hw.perflevel0.l1dcachesize"));
+    c.l2  = static_cast<std::size_t>(sysctl_u64("hw.perflevel0.l2cachesize"));
+    // fallback to any cores
+    if (c.l1d == 0) 
+        c.l1d = static_cast<std::size_t>(sysctl_u64("hw.l1dcachesize"));
+    if (c.l2 == 0) 
+        c.l2 = static_cast<std::size_t>(sysctl_u64("hw.l2cachesize"));
+    c.l3 = static_cast<std::size_t>(sysctl_u64("hw.l3cachesize"));
+
+#elif defined(__linux__)
+    c = sysfs_caches();
+    #if defined(_SC_LEVEL1_DCACHE_SIZE)
+        // glibc fallback
+        if (c.l1d == 0) c.l1d = static_cast<std::size_t>(std::max(0L, sysconf(_SC_LEVEL1_DCACHE_SIZE)));
+        if (c.l2 == 0) c.l2 = static_cast<std::size_t>(std::max(0L, sysconf(_SC_LEVEL2_CACHE_SIZE)));
+        if (c.l3 == 0) c.l3 = static_cast<std::size_t>(std::max(0L, sysconf(_SC_LEVEL3_CACHE_SIZE)));
+    #endif
+#endif
+    return c;
 }
 
 SIMD detect_simd() {
