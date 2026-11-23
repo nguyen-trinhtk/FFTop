@@ -7,9 +7,9 @@
     - Butterfly: regard to a 2x2 switch (which is a block itself in a radix-2 network). It has the shape like (TODO). For example, each radix-4 block has four butterflies (TODO)
 - Group (G): a set of S blocks in a stage. As a consequent, these groups are consecutive. 
 
-<!-- ### Stockham FFT
+### Stockham FFT
 
 I don't think theres anything here
 
 ### 2D FFT
-- TODO: Row, column, tile, panel????? --> -->
+- TODO: Row, column, tile, panel????? -->

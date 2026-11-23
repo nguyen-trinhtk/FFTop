@@ -72,8 +72,8 @@ private:
 
     // Split only
     unsigned log_m_ = 0;
-    std::vector<Complex> lo_twiddles_;  // twiddles for stages before transpose
-    std::vector<Complex> hi_twiddles_;  // twiddles for stages after transpose
+    std::vector<Complex> lo_twiddles_;  // W_N^e for the low log_m_ bits of e
+    std::vector<Complex> hi_twiddles_;  // W_N^e for the high bits of e
 };
 
 // Direct O(N^2) DFT from twiddle table, suitable for tiny N

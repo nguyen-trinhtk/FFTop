@@ -208,7 +208,7 @@ TEST(Planner, DescribeShowsTheChoice) {
     EXPECT_EQ(cpu_of(planner.make_spec(65536, HardwareTarget::CPU)).split, 256u);
 }
 
-TEST(Planner, CachesExecutables) {
+TEST(Planner, CachesPlans) {
     PlanCache cache;
     const Planner planner(system_config(), {}, &cache);
 

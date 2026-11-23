@@ -9,7 +9,7 @@
 #include <unordered_map>
 
 namespace FFTop {
-inline constexpr std::size_t FNV_PRIME = 0x9e3779b9;
+inline constexpr std::size_t HASH_GOLDEN_RATIO = 0x9e3779b9;
 
 // Key on (size, HW target)
 struct CacheKey {
@@ -18,11 +18,11 @@ struct CacheKey {
     bool operator==(const CacheKey& o) const { return size == o.size && target == o.target; }
 };
 
-// Key hash function: FNV-1a
+// Key hash function: boost-style hash_combine
 struct CacheKeyHash {
     std::size_t operator()(const CacheKey& k) const noexcept {
         std::size_t h = k.size;
-        h ^= static_cast<std::size_t>(k.target) + FNV_PRIME + (h << 6) + (h >> 2);
+        h ^= static_cast<std::size_t>(k.target) + HASH_GOLDEN_RATIO + (h << 6) + (h >> 2);
         return h;
     }
 };

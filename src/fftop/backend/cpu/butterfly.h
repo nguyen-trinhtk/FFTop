@@ -8,8 +8,8 @@
 
 namespace FFTop::CPU {
 
-// Generic radix B butterfly network
-// For now radix B only support N=B^k
+// Generic radix R butterfly network
+// For now radix R only support N=R^k
 // TODO: generalization (TFT) / mixed radix
 class IRadixR {
 public:

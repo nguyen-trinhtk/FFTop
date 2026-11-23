@@ -74,7 +74,7 @@ Three kernel strategies, one axis (`traversal`):
 
 - `cooley-tukey-gmem` — in-place Cooley–Tukey in global memory (bit-reversal + one kernel per stage)
 - `stockham-gmem` — self-sorting Stockham, ping-pong global memory, no bit-reversal
-- `stockham-smem` — Stockham inner FFTs in shared memory; large N is factored as \(N_1\times N_2\)
+- `stockham-smem` — Stockham inner FFTs in shared memory; large N is factored as \(N_1\times\cdots\times N_p\), one pass per factor
 
 Block size and the number of shared-memory passes come from the GPU planner (longest
 column from the device's smem and thread limits, log2 N spread evenly over the passes).
@@ -88,4 +88,4 @@ python bench/bench.py \
 Writes runtime, effective bandwidth, estimated global traffic, and throughput
 plots (`gpu-kernel-strategies_*.png` plus a combined `_metrics.png`).
 
-For Colab, open `gpu-notebooks/stockham_sweep_colab.ipynb` from the `colab-gpu` branch. -->
+For Colab, open `playground/gpu-notebooks/stockham_sweep_colab.ipynb` from the `colab-gpu` branch. -->

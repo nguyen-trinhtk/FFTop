@@ -22,7 +22,7 @@ constexpr std::size_t MIN_BLOCKS_PER_SM = 2;  // block sync overlapping
 // Largest column-size L for Stockham
 // that ensures 
 // 1. tile fits smem (opted-in if possible?)
-// 2. threads per block under MAX_THREAD_PER_BLOCK
+// 2. threads per block <= max_threads_per_block
 // 3. >= MIN_BLOCKS_PER_SM
 std::size_t smem_column(const GPUInfo& gpu) {
     std::size_t column = gpu.smem_per_block_optin > 0

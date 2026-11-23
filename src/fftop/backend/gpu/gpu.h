@@ -54,7 +54,7 @@ using PinnedBuffer = CudaBuffer<true>;
 Complex* cooley_tukey_gmem(Complex* a, const Complex* W, unsigned n, unsigned radix, Direction dir,
                            unsigned block);
 
-/// @brief Launcher for in-place Stockham (gmem) kernel
+/// @brief Launcher for Stockham (gmem) kernel
 /// @param a device-pointer to input
 /// @param b device-pointer to scratch buffer (ping-pong)
 /// @param W per-stage twiddle table
@@ -104,7 +104,7 @@ public:
 
     /// @brief Execute kernel on device buffer (async on default stream)
     /// @param d_out pointer to output buffer (dev)
-    /// @param d_in pointer to input buffer (host)
+    /// @param d_in pointer to input buffer (dev)
     /// @param dir forward or inverse
     /// @note Set `d_out = d_in` for in-place execution
     void execute_device(Complex* d_out, const Complex* d_in, Direction dir) const override;

@@ -18,11 +18,12 @@ struct GPUInfo {
     std::size_t smem_per_block_optin = 0;  // opt-in limit for dynamic smem (bytes)
     std::size_t smem_per_sm = 0;  // bytes
     std::size_t reserved_smem_per_block = 0;  // reserved by runtime
+    int max_threads_per_block = 0;
     int max_threads_per_sm = 0;
 };
 
 // Hardware facts, detected once per process. 0 means "unknown";
-// the planners fall back to defaults (see plan/estimate.h).
+// the planners fall back to defaults (see plan/planner.h).
 struct SystemConfig {
     // CPU
     std::string cpu;

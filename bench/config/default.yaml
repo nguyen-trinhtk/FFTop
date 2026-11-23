@@ -1,7 +1,7 @@
 # Default bench config. Comparisons are questions; C++ only times a spec.
 # Scales: log | linear (scalar is an alias for linear).
 
-schema: 2
+schema: 3
 
 defaults:
   min_k: 6
