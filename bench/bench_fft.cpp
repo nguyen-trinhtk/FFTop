@@ -1,6 +1,5 @@
-#include "fftop/backend/backend_registry.h"
-#include "fftop/math/fft_math.h"
 #include "fftop/plan/plan.h"
+#include "fftop/plan/planner.h"
 #include "fftop/system.h"
 #include "fftop/types.h"
 #include "reference/dft.h"
@@ -10,29 +9,25 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <exception>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <unistd.h>
 #include <vector>
 
-#if defined(FFTOP_ENABLE_OPENMP)
-#include <omp.h>
-#endif
-
 #if defined(FFTOP_ENABLE_CUDA)
-#include "fftop/backend/gpu/gpu_backend.h"
-#include "fftop/backend/gpu/gpu_utils.h"
-#include "fftop/math/twiddle.h"
+#include "fftop/backend/gpu/gpu.h"
 #endif
 
 namespace {
 
 using Clock = std::chrono::steady_clock;
 
-constexpr int    kMinRepeats = 20;
-constexpr int    kMaxRepeats = 5000;
-constexpr double kTargetMs   = 100.0;
+constexpr int MIN_REPEATS = 20;
+constexpr int MAX_REPEATS = 5000;
+constexpr double TARGET_MS = 100.0;
 
 struct BenchSpec {
     std::string backend;
@@ -40,18 +35,21 @@ struct BenchSpec {
     std::string radix;
     std::string simd;
     std::string execution;
-    int         threads = 1;
+    int threads = 1;
     std::size_t size = 0;
 };
 
-enum class GPUBenchVariant { CooleyTukey, StockhamGlobal, StockhamShared };
-
 void usage() {
-    std::cerr
-        << "fftop_bench --system\n"
-        << "fftop_bench [--dry-run] [--no-header]\n"
-        << "  stdin: backend,traversal,radix,simd,execution,threads,size\n"
-        << "  stdout: schema-3 CSV rows\n";
+    std::cerr << "fftop_bench --system\n"
+              << "fftop_bench [--dry-run] [--no-header]\n"
+              << "  stdin: backend,traversal,radix,simd,execution,threads,size\n"
+              << "    backend:   CPU | GPU | auto (the planner's choice; other columns ignored) | "
+                 "naive-dft\n"
+              << "    traversal: CPU: iterative | recursive | dft | four-step (iterative + the "
+                 "planner's split)\n"
+              << "               GPU: cooley-tukey-gmem | stockham-gmem | stockham-smem\n"
+              << "    threads:   used when execution=parallel (OpenMP num_threads, per run)\n"
+              << "  stdout: schema-3 CSV rows\n";
 }
 
 std::string json_escape(const std::string& s) {
@@ -59,10 +57,18 @@ std::string json_escape(const std::string& s) {
     out.reserve(s.size());
     for (char c : s) {
         switch (c) {
-        case '\\': out += "\\\\"; break;
-        case '"':  out += "\\\""; break;
-        case '\n': out += "\\n";  break;
-        default:   out += c;      break;
+            case '\\':
+                out += "\\\\";
+                break;
+            case '"':
+                out += "\\\"";
+                break;
+            case '\n':
+                out += "\\n";
+                break;
+            default:
+                out += c;
+                break;
         }
     }
     return out;
@@ -74,15 +80,23 @@ void write_system_json() {
               << "  \"schema\": 3,\n"
               << "  \"cpu\": \"" << json_escape(cfg.cpu) << "\",\n"
               << "  \"cpu_threads\": " << cfg.cpu_threads << ",\n"
+              << "  \"cpu_cores\": " << cfg.cpu_cores << ",\n"
+              << "  \"l1d_bytes\": " << cfg.l1d_bytes << ",\n"
+              << "  \"l2_bytes\": " << cfg.l2_bytes << ",\n"
+              << "  \"l3_bytes\": " << cfg.l3_bytes << ",\n"
               << "  \"simd\": \"" << FFTop::to_string(cfg.simd) << "\",\n"
               << "  \"openmp\": " << (cfg.openmp ? "true" : "false") << ",\n"
-              << "  \"nvidia_gpu\": " << (cfg.nvidia_gpu ? "true" : "false")
-              << ",\n"
-              << "  \"cuda\": " << (cfg.cuda ? "true" : "false") << "\n"
+              << "  \"nvidia_gpu\": " << (cfg.nvidia_gpu ? "true" : "false") << ",\n"
+              << "  \"cuda\": " << (cfg.cuda ? "true" : "false") << ",\n"
+              << "  \"gpu_name\": \"" << json_escape(cfg.gpu.name) << "\",\n"
+              << "  \"gpu_cc\": \"" << cfg.gpu.cc_major << '.' << cfg.gpu.cc_minor << "\",\n"
+              << "  \"gpu_sm_count\": " << cfg.gpu.sm_count << ",\n"
+              << "  \"gpu_smem_per_block\": " << cfg.gpu.smem_per_block << ",\n"
+              << "  \"gpu_max_threads_per_block\": " << cfg.gpu.max_threads_per_block << "\n"
               << "}\n";
 }
 
-bool parse_spec(const std::string& line, BenchSpec& spec, std::string& err) {
+bool parse_spec(BenchSpec& spec, const std::string& line, std::string& err) {
     std::vector<std::string> cols;
     std::stringstream ss(line);
     std::string cell;
@@ -91,14 +105,14 @@ bool parse_spec(const std::string& line, BenchSpec& spec, std::string& err) {
         err = "expected 7 columns, got " + std::to_string(cols.size());
         return false;
     }
-    spec.backend   = cols[0];
+    spec.backend = cols[0];
     spec.traversal = cols[1];
-    spec.radix     = cols[2];
-    spec.simd      = cols[3];
+    spec.radix = cols[2];
+    spec.simd = cols[3];
     spec.execution = cols[4];
     try {
         spec.threads = std::stoi(cols[5]);
-        spec.size    = static_cast<std::size_t>(std::stoull(cols[6]));
+        spec.size = static_cast<std::size_t>(std::stoull(cols[6]));
     } catch (...) {
         err = "bad threads or size";
         return false;
@@ -123,41 +137,58 @@ FFTop::SIMD parse_simd(const std::string& s, std::string& err) {
     return FFTop::SIMD::Scalar;
 }
 
-bool parse_plan(const BenchSpec& spec, FFTop::FFTPlan& plan, FFTop::SystemConfig& sys,
-                FFTop::CPUPlanOptions& cpu, GPUBenchVariant& gpu_variant,
-                std::string& err) {
-    plan.size = spec.size;
-    plan.hardware_target = spec.backend == "GPU" ? FFTop::HardwareTarget::GPU
-                                                : FFTop::HardwareTarget::CPU;
-    if (spec.radix == "4")
-        plan.radix = FFTop::RadixPolicy::Radix4;
-    else
-        plan.radix = FFTop::RadixPolicy::Radix2;
-    cpu.traversal = spec.traversal == "recursive"
-                        ? FFTop::Traversal::Recursive
-                        : FFTop::Traversal::Iterative;
-    cpu.execution = spec.execution == "parallel" ? FFTop::Execution::Parallel
-                                                 : FFTop::Execution::Serial;
-    sys           = FFTop::system_config();
-    sys.simd      = parse_simd(spec.simd, err);
+// A forced config from a spec row (the planner is bypassed), or the planner's
+// own choice for backend "auto". Launch shapes and the four-step tile come from
+// the planners, so a row only names what it compares.
+bool parse_spec(FFTop::PlanSpec& plan_spec, const BenchSpec& spec, std::string& err) {
+    const FFTop::SystemConfig& sys = FFTop::system_config();
+    const FFTop::EstimateParams params;
+    if (spec.backend == "auto") {
+        plan_spec = FFTop::Planner(sys, params).make_spec(spec.size, FFTop::HardwareTarget::Auto);
+        return true;
+    }
+
+    plan_spec.size = spec.size;
+    const FFTop::Radix radix = spec.radix == "4" ? FFTop::Radix::Radix4 : FFTop::Radix::Radix2;
     if (spec.backend == "GPU") {
-        if (spec.traversal == "cooley-tukey" || spec.traversal == "iterative") {
-            gpu_variant = GPUBenchVariant::CooleyTukey;
-        } else if (spec.traversal == "stockham-global") {
-            gpu_variant = GPUBenchVariant::StockhamGlobal;
-        } else if (spec.traversal == "stockham-shared") {
-            gpu_variant = GPUBenchVariant::StockhamShared;
+        FFTop::GPUConfig cfg = FFTop::GPUPlanner(sys.gpu).plan(spec.size);
+        cfg.radix = radix;
+        if (spec.traversal == "cooley-tukey-gmem" || spec.traversal == "iterative") {
+            cfg.kernel = FFTop::GPUKernel::CooleyTukeyGmem;
+        } else if (spec.traversal == "stockham-gmem") {
+            cfg.kernel = FFTop::GPUKernel::StockhamGmem;
+        } else if (spec.traversal == "stockham-smem") {
+            cfg.kernel = FFTop::GPUKernel::StockhamSmem;
         } else {
             err = "unknown GPU traversal '" + spec.traversal + "'";
         }
+        plan_spec.config = cfg;
+        return err.empty();
     }
+
+    FFTop::CPUConfig cfg;
+    cfg.radix = radix;
+    cfg.simd = parse_simd(spec.simd, err);
+    cfg.threads = spec.execution == "parallel" ? spec.threads : 1;
+    if (spec.traversal == "iterative") {
+        cfg.algorithm = FFTop::CPUAlgorithm::Iterative;
+    } else if (spec.traversal == "recursive") {
+        cfg.algorithm = FFTop::CPUAlgorithm::Recursive;
+    } else if (spec.traversal == "dft") {
+        cfg.algorithm = FFTop::CPUAlgorithm::DFT;
+    } else if (spec.traversal == "four-step") {  // iterative with the planner's split
+        cfg.algorithm = FFTop::CPUAlgorithm::Iterative;
+        cfg.split = FFTop::CPUPlanner(sys, params).split_for(spec.size);
+    } else {
+        err = "unknown CPU traversal '" + spec.traversal + "'";
+    }
+    plan_spec.config = cfg;
     return err.empty();
 }
 
 int choose_repeats(double one_ms) {
-    if (!(one_ms > 0.0) || !std::isfinite(one_ms)) return kMaxRepeats;
-    return std::clamp(static_cast<int>(std::lround(kTargetMs / one_ms)),
-                      kMinRepeats, kMaxRepeats);
+    if (!(one_ms > 0.0) || !std::isfinite(one_ms)) return MAX_REPEATS;
+    return std::clamp(static_cast<int>(std::lround(TARGET_MS / one_ms)), MIN_REPEATS, MAX_REPEATS);
 }
 
 template <typename Fn>
@@ -165,74 +196,50 @@ double time_ms(const BenchSpec& spec, Fn&& fn) {
     fn();
     const auto t_one0 = Clock::now();
     fn();
-    const double one_ms =
-        std::chrono::duration<double, std::milli>(Clock::now() - t_one0).count();
+    const double one_ms = std::chrono::duration<double, std::milli>(Clock::now() - t_one0).count();
     const int repeats = choose_repeats(one_ms);
 
     const auto t0 = Clock::now();
     for (int i = 0; i < repeats; ++i) fn();
     const double ms =
-        std::chrono::duration<double, std::milli>(Clock::now() - t0).count() /
-        repeats;
+        std::chrono::duration<double, std::milli>(Clock::now() - t0).count() / repeats;
 
-    std::cerr << spec.backend << ' ' << spec.traversal << " r" << spec.radix
-              << ' ' << spec.simd << " t" << spec.threads << " N=" << spec.size
-              << " repeats=" << repeats << ' ' << ms << " ms\n";
+    std::cerr << spec.backend << ' ' << spec.traversal << " r" << spec.radix << ' ' << spec.simd
+              << " t" << spec.threads << " N=" << spec.size << " repeats=" << repeats << ' ' << ms
+              << " ms\n";
     return ms;
 }
 
 void print_row(const BenchSpec& spec, double ms, std::uint64_t global_mem_bytes) {
-    const double bandwidth_gbps =
-        (global_mem_bytes == 0 || !(ms > 0.0))
-            ? 0.0
-            : static_cast<double>(global_mem_bytes) / (ms * 1.0e6);
+    const double bandwidth_gbps = (global_mem_bytes == 0 || !(ms > 0.0))
+                                      ? 0.0
+                                      : static_cast<double>(global_mem_bytes) / (ms * 1.0e6);
     const double throughput_gsamples =
         (spec.size == 0 || !(ms > 0.0)) ? 0.0 : static_cast<double>(spec.size) / (ms * 1.0e6);
 
-    std::cout << spec.backend << ',' << spec.traversal << ',' << spec.radix
-              << ',' << spec.simd << ',' << spec.execution << ','
-              << spec.threads << ',' << spec.size << ',' << ms
-              << ',' << global_mem_bytes << ',' << bandwidth_gbps
-              << ',' << throughput_gsamples << '\n';
-}
-
-void apply_threads(int threads) {
-#if defined(FFTOP_ENABLE_OPENMP)
-    omp_set_dynamic(0);
-    omp_set_num_threads(threads);
-#else
-    (void)threads;
-#endif
+    std::cout << spec.backend << ',' << spec.traversal << ',' << spec.radix << ',' << spec.simd
+              << ',' << spec.execution << ',' << spec.threads << ',' << spec.size << ',' << ms
+              << ',' << global_mem_bytes << ',' << bandwidth_gbps << ',' << throughput_gsamples
+              << '\n';
 }
 
 #if defined(FFTOP_ENABLE_CUDA)
-double time_gpu_ms(const BenchSpec& spec, FFTop::GPUFFTBackend& gpu, const FFTop::FFTPlan& plan) {
+double time_gpu_ms(const BenchSpec& spec, const FFTop::GPUPlan& gpu) {
     using FFTop::Complex;
     const std::size_t n = spec.size;
-    FFTop::GPU::DeviceBuf d_src(n);
-    FFTop::GPU::DeviceBuf d_a(n);
-    FFTop::GPU::DeviceBuf d_b(gpu.needs_scratch() ? n : 0);
-    FFTop::GPU::DeviceBuf d_W(n);
+    const std::size_t bytes = n * sizeof(Complex);
+    FFTop::GPU::DeviceBuffer d_src(n);
+    FFTop::GPU::DeviceBuffer d_a(n);
+    FFTop::GPU::DeviceBuffer d_b(n);  // scratch
 
     FFTop::Buffer input(n, {1, 0});
-    FFTop::GPU::check_cuda(
-        cudaMemcpy(d_src.ptr, input.data(), n * sizeof(double2), cudaMemcpyHostToDevice),
-        "bench H2D");
-    const auto W = FFTop::default_twiddles().get(n);
-    FFTop::GPU::check_cuda(
-        cudaMemcpy(d_W.ptr, W->data(), n * sizeof(double2), cudaMemcpyHostToDevice),
-        "bench twiddle H2D");
-
+    FFTop::GPU::check_cuda(cudaMemcpy(d_src.ptr, input.data(), bytes, cudaMemcpyHostToDevice),
+                           "bench H2D");
     auto restore = [&] {
-        FFTop::GPU::check_cuda(
-            cudaMemcpy(d_a.ptr, d_src.ptr, n * sizeof(double2), cudaMemcpyDeviceToDevice),
-            "bench restore");
+        FFTop::GPU::check_cuda(cudaMemcpy(d_a.ptr, d_src.ptr, bytes, cudaMemcpyDeviceToDevice),
+                               "bench restore");
     };
-    auto run = [&] {
-        gpu.execute_device(plan, reinterpret_cast<Complex*>(d_a.ptr),
-                           reinterpret_cast<Complex*>(d_b.ptr),
-                           reinterpret_cast<const Complex*>(d_W.ptr));
-    };
+    auto run = [&] { gpu.run_device(d_a.ptr, d_b.ptr, FFTop::Direction::Forward); };
 
     restore();
     run();
@@ -266,28 +273,19 @@ double time_gpu_ms(const BenchSpec& spec, FFTop::GPUFFTBackend& gpu, const FFTop
     cudaEventDestroy(stop);
 
     const double ms = total_ms / repeats;
-    std::cerr << spec.backend << ' ' << spec.traversal << " r" << spec.radix
-              << ' ' << spec.simd << " t" << spec.threads << " N=" << spec.size
-              << " repeats=" << repeats << ' ' << ms << " ms\n";
+    std::cerr << spec.backend << ' ' << spec.traversal << " r" << spec.radix << ' ' << spec.simd
+              << " t" << spec.threads << " N=" << spec.size << " repeats=" << repeats << ' ' << ms
+              << " ms\n";
     return ms;
 }
 #endif
 
 bool run_spec(const BenchSpec& spec, bool dry, std::string& err) {
-    if (spec.backend != "GPU" && spec.radix == "4" &&
-        !FFTop::Math::is_power_of(spec.size, 4)) {
-        err = "radix-4 requires N = 4^p";
-        return false;
-    }
-
     if (dry) {
-        std::cerr << spec.backend << ',' << spec.traversal << ',' << spec.radix
-                  << ',' << spec.simd << ',' << spec.execution << ','
-                  << spec.threads << ',' << spec.size << '\n';
+        std::cerr << spec.backend << ',' << spec.traversal << ',' << spec.radix << ',' << spec.simd
+                  << ',' << spec.execution << ',' << spec.threads << ',' << spec.size << '\n';
         return true;
     }
-
-    apply_threads(spec.threads);
 
     if (spec.backend == "naive-dft") {
         FFTop::Buffer input(spec.size, {1, 0});
@@ -296,51 +294,39 @@ bool run_spec(const BenchSpec& spec, bool dry, std::string& err) {
         return true;
     }
 
-    if (spec.backend != "CPU" && spec.backend != "GPU") {
+    if (spec.backend != "CPU" && spec.backend != "GPU" && spec.backend != "auto") {
         err = "unknown backend '" + spec.backend + "'";
         return false;
     }
 
-    FFTop::FFTPlan plan;
-    FFTop::SystemConfig sys;
-    FFTop::CPUPlanOptions cpu;
-    GPUBenchVariant gpu_variant = GPUBenchVariant::CooleyTukey;
-    if (!parse_plan(spec, plan, sys, cpu, gpu_variant, err)) return false;
-    if (spec.backend == "GPU") {
-        if (spec.radix != "2") {
-            err = "GPU variants currently require radix=2";
-            return false;
-        }
-        switch (gpu_variant) {
-            case GPUBenchVariant::CooleyTukey:
-                plan.gpu_strategy = FFTop::GPUKernelStrategy::CooleyTukeyGlobal;
-                break;
-            case GPUBenchVariant::StockhamGlobal:
-                plan.gpu_strategy = FFTop::GPUKernelStrategy::StockhamGlobal;
-                break;
-            case GPUBenchVariant::StockhamShared:
-                plan.gpu_strategy = FFTop::GPUKernelStrategy::StockhamShared;
-                break;
-        }
+    FFTop::PlanSpec plan_spec;
+    std::unique_ptr<FFTop::Plan> plan;
+    try {
+        if (!parse_spec(plan_spec, spec, err)) return false;
+        plan = FFTop::build_plan(plan_spec);  // throws for configs that can't run N
+    } catch (const std::exception& e) {
+        err = e.what();
+        return false;
     }
+    if (spec.backend == "auto") std::cerr << "auto -> " << FFTop::describe(plan_spec) << '\n';
 
-    auto backend = FFTop::make_backend(plan, sys, cpu);
 #if defined(FFTOP_ENABLE_CUDA)
-    if (spec.backend == "GPU") {
-        auto* gpu = dynamic_cast<FFTop::GPUFFTBackend*>(backend.get());
+    if (plan_spec.target() == FFTop::HardwareTarget::GPU) {
+        const auto* gpu = dynamic_cast<const FFTop::GPUPlan*>(plan.get());
         if (!gpu) {
             err = "GPU backend unavailable";
             return false;
         }
-        const double ms = time_gpu_ms(spec, *gpu, plan);
-        print_row(spec, ms, gpu->estimated_global_bytes(spec.size));
+        const double ms = time_gpu_ms(spec, *gpu);
+        print_row(spec, ms, gpu->estimated_global_bytes());
         return true;
     }
 #endif
 
     FFTop::Buffer input(spec.size, {1, 0});
     FFTop::Buffer output;
-    const double ms = time_ms(spec, [&] { backend->execute(plan, input, output); });
+    const double ms =
+        time_ms(spec, [&] { plan->execute(output, input, FFTop::Direction::Forward); });
     print_row(spec, ms, 0);
     return true;
 }
@@ -348,7 +334,7 @@ bool run_spec(const BenchSpec& spec, bool dry, std::string& err) {
 }  // namespace
 
 int main(int argc, char** argv) {
-    bool dry       = false;
+    bool dry = false;
     bool system_only = false;
     bool no_header = false;
 
@@ -382,8 +368,8 @@ int main(int argc, char** argv) {
 
     if (!dry) {
         std::cerr << FFTop::describe_system(FFTop::system_config());
-        std::cerr << "repeats: target " << kTargetMs << " ms, clamp ["
-                  << kMinRepeats << ", " << kMaxRepeats << "]\n";
+        std::cerr << "repeats: target " << TARGET_MS << " ms, clamp [" << MIN_REPEATS << ", "
+                  << MAX_REPEATS << "]\n";
     }
     if (!no_header && !dry) {
         std::cout << "# schema=3\n";
@@ -397,7 +383,7 @@ int main(int argc, char** argv) {
         if (line.empty() || line[0] == '#') continue;
         BenchSpec spec;
         std::string err;
-        if (!parse_spec(line, spec, err)) {
+        if (!parse_spec(spec, line, err)) {
             std::cerr << "error: " << line << " (" << err << ")\n";
             rc = 1;
             continue;

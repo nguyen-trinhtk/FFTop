@@ -19,8 +19,32 @@ bool detect_cuda() {
 #endif
 }
 
+GPUInfo detect_gpu_info() {
+    GPUInfo info;
+#if defined(FFTOP_ENABLE_CUDA)
+    int device = 0;
+    cudaDeviceProp prop{};
+    if (cudaGetDevice(&device) != cudaSuccess ||
+        cudaGetDeviceProperties(&prop, device) != cudaSuccess)
+        return info;
+    info.name = prop.name;
+    // Compute capability
+    info.cc_major = prop.major;
+    info.cc_minor = prop.minor;
+    // Block-related info (sm, smem, max threads)
+    info.sm_count = prop.multiProcessorCount;
+    info.smem_per_block = prop.sharedMemPerBlock;
+    info.smem_per_block_optin = prop.sharedMemPerBlockOptin;
+    info.smem_per_sm = prop.sharedMemPerMultiprocessor;
+    info.reserved_smem_per_block = prop.reservedSharedMemPerBlock;
+    info.max_threads_per_block = prop.maxThreadsPerBlock;
+    info.max_threads_per_sm = prop.maxThreadsPerMultiProcessor;
+#endif
+    return info;
+}
+
 bool detect_nvidia_gpu() {
-    if (detect_cuda()) return true; // cuda available
+    if (detect_cuda()) return true;  // cuda available
 #if defined(_WIN32)
     // Windows
     FILE* pipe = _popen("nvidia-smi -L 2>NUL", "r");

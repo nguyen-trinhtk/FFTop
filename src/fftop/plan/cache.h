@@ -1,47 +1,44 @@
 #pragma once
 
-#include "fftop/types.h"
 #include "fftop/plan/plan.h"
+#include "fftop/types.h"
 
 #include <cstddef>
-#include <optional>
+#include <memory>
+#include <mutex>
 #include <unordered_map>
 
-static constexpr std::size_t FNV_PRIME = 0x9e3779b9;
-
 namespace FFTop {
+inline constexpr std::size_t HASH_GOLDEN_RATIO = 0x9e3779b9;
 
-// Cache key
+// Key on (size, HW target)
 struct CacheKey {
     std::size_t size;
-    HardwareTarget hardware_target;
-    Direction   direction;
-
-    bool operator==(const CacheKey& o) const {
-        return size == o.size 
-        && hardware_target == o.hardware_target 
-        && direction == o.direction;
-    }
+    HardwareTarget target;  // CPU/GPU/Auto
+    bool operator==(const CacheKey& o) const { return size == o.size && target == o.target; }
 };
 
-
-// Key hash function: FNV-1a
+// Key hash function: boost-style hash_combine
 struct CacheKeyHash {
     std::size_t operator()(const CacheKey& k) const noexcept {
         std::size_t h = k.size;
-        h ^= static_cast<std::size_t>(k.hardware_target) + FNV_PRIME + (h << 6) + (h >> 2);
-        h ^= static_cast<std::size_t>(k.direction) + FNV_PRIME + (h << 6) + (h >> 2);
+        h ^= static_cast<std::size_t>(k.target) + HASH_GOLDEN_RATIO + (h << 6) + (h >> 2);
         return h;
     }
 };
 
-// Unordered map of cache keys to plans
+// Cache of (size, target) -> plan
+// TODO: size limit (LRU) (using clear() for now)
 class PlanCache {
 public:
-    std::optional<FFTPlan> find(std::size_t size, const FFTOptions& options) const;
-    void store(const FFTPlan& plan);
-private:
-    std::unordered_map<CacheKey, FFTPlan, CacheKeyHash> entries_;
-};
+    std::shared_ptr<const Plan> find(std::size_t size, HardwareTarget target) const;
+    std::shared_ptr<const Plan> store(std::size_t size, HardwareTarget target,
+                                      std::shared_ptr<const Plan> plan);
+    void clear();
+    std::size_t entries() const;
 
+private:
+    mutable std::mutex mu_;
+    std::unordered_map<CacheKey, std::shared_ptr<const Plan>, CacheKeyHash> entries_;
+};
 }  // namespace FFTop

@@ -1,57 +1,54 @@
 #pragma once
 
-#include "fftop/backend/backend_registry.h"
+// Helpers for tests that build plans from hand-made configs
+// (the planner is bypassed on purpose).
+
 #include "fftop/plan/plan.h"
 #include "fftop/system.h"
 #include "support/check.h"
 
 #include <memory>
-#include <vector>
 
 namespace FFTop::Test {
 
-constexpr Traversal kTraversals[] = {Traversal::Iterative, Traversal::Recursive};
-
-inline const char* name(Traversal traversal) {
-    return traversal == Traversal::Iterative ? "iterative" : "recursive";
+// CPUConfig on this host's SIMD
+inline CPUConfig cpu_config(CPUAlgorithm algorithm, Radix radix = Radix::Radix2, int threads = 1) {
+    CPUConfig cfg;
+    cfg.algorithm = algorithm;
+    cfg.radix = radix;
+    cfg.simd = system_config().simd;
+    cfg.threads = threads;
+    return cfg;
 }
 
-inline std::vector<std::unique_ptr<IBackend>> all_backends() {
-    std::vector<std::unique_ptr<IBackend>> out;
-
-    FFTPlan cpu;
-    cpu.hardware_target = HardwareTarget::CPU;
-    out.push_back(make_backend(cpu));
-
-#if defined(FFTOP_ENABLE_CUDA)
-    FFTPlan gpu;
-    gpu.hardware_target = HardwareTarget::GPU;
-    try {
-        auto backend = make_backend(gpu);
-        if (backend->is_available()) out.push_back(std::move(backend));
-    } catch (const std::runtime_error&) {
-    }
-#endif
-    return out;
+// Iterative with a four-step split
+inline CPUConfig four_step(std::size_t split, Radix radix = Radix::Radix2, int threads = 1) {
+    CPUConfig cfg = cpu_config(CPUAlgorithm::Iterative, radix, threads);
+    cfg.split = split;
+    return cfg;
 }
 
-inline Buffer run(IBackend& backend, const Buffer& input, Direction dir) {
-    FFTPlan plan;
-    plan.size      = input.size();
-    plan.direction = dir;
+template <class Config>
+std::unique_ptr<Plan> build(std::size_t n, const Config& cfg) {
+    return build_plan(PlanSpec{n, cfg});
+}
+
+inline Buffer run(const Plan& plan, const Buffer& input, Direction dir) {
     Buffer output;
-    backend.execute(plan, input, output);
+    plan.execute(output, input, dir);
     return output;
 }
 
-inline void expect_matches_dft(IBackend& backend, const Buffer& input) {
-    expect_matches_dft([&](const Buffer& x, Direction d) { return run(backend, x, d); },
-                       input, backend.name());
-}
-
-template <std::size_t N>
-void expect_matches_dft(IBackend& backend, const std::size_t (&sizes)[N]) {
-    for_each_input(sizes, [&](const Buffer& x) { expect_matches_dft(backend, x); });
+// One plan per size, checked against the DFT on every signal, both directions
+template <class Config, std::size_t N>
+void expect_config_matches_dft(const Config& cfg, const std::size_t (&sizes)[N]) {
+    for (std::size_t n : sizes) {
+        auto plan = build(n, cfg);
+        for (auto signal : SIGNALS) {
+            expect_matches_dft([&](const Buffer& x, Direction d) { return run(*plan, x, d); },
+                               signal(n), plan->name());
+        }
+    }
 }
 
 }  // namespace FFTop::Test

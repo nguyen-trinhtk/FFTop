@@ -625,10 +625,8 @@ def main() -> None:
         write_plots(csv_path, out_dir, comparisons)
         return
 
-    out_dir = args.output_dir or ROOT / "log" / datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
     if args.plot_only:
+        out_dir = args.output_dir or ROOT / "log" / datetime.now().strftime("%Y-%m-%d_%H%M%S")
         csv_path = out_dir / "bench.csv"
         if not csv_path.is_file():
             raise SystemExit(f"no {csv_path}")
@@ -637,6 +635,9 @@ def main() -> None:
 
     if not args.dry_run and not args.bench.is_file():
         raise SystemExit(f"missing {args.bench} (build fftop_bench first)")
+
+    out_dir = args.output_dir or ROOT / "log" / datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     if args.dry_run:
         host = Host(cpu_threads=8, simd_kernel="neon", openmp=True, cuda=True)
@@ -657,6 +658,11 @@ def main() -> None:
     system["config"] = str(args.config)
 
     jobs = jobs_for(host, comparisons)
+    if not jobs and any("needs_gpu" in c.gates for c in comparisons):
+        raise SystemExit(
+            f"0 GPU jobs (cuda={getattr(host, 'cuda', False)}). "
+            "Build with -DFFTOP_ENABLE_CUDA=ON on a machine with a CUDA device."
+        )
     (out_dir / "system.json").write_text(json.dumps(system, indent=2) + "\n")
     shutil.copy2(args.config, out_dir / "config.yaml")
     (out_dir / "jobs.txt").write_text(

@@ -9,27 +9,27 @@ defaults:
   hold_fixed: true
   variant:
     backend: GPU
-    traversal: cooley-tukey
+    traversal: cooley-tukey-gmem
     radix: "2"
     simd: "-"
     execution: serial
     threads: 1
 
 variants:
-  cooley-tukey-naive:
-    traversal: cooley-tukey
-    label: cooley-tukey naive
-  stockham-naive:
-    traversal: stockham-global
-    label: stockham naive
-  stockham-shared:
-    traversal: stockham-shared
-    label: stockham shared
+  cooley-tukey-gmem:
+    traversal: cooley-tukey-gmem
+    label: cooley-tukey gmem
+  stockham-gmem:
+    traversal: stockham-gmem
+    label: stockham gmem
+  stockham-smem:
+    traversal: stockham-smem
+    label: stockham smem
 
 comparisons:
   - id: gpu-kernel-strategies
     title: GPU FFT kernels (global vs shared memory)
     question: Which kernel strategy gives best runtime and bandwidth?
-    variants: [cooley-tukey-naive, stockham-naive, stockham-shared]
+    variants: [cooley-tukey-gmem, stockham-gmem, stockham-smem]
     gates: [needs_gpu]
     plot: gpu_metrics
