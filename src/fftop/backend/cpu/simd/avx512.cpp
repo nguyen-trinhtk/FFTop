@@ -14,7 +14,7 @@ namespace FFTop::CPU {
 // AVX512 can hold four interleaved complexes
 struct AVX512 {
     static constexpr std::size_t width = 4;
-    using Pack                         = __m512d;
+    using Pack = __m512d;
 
     static Pack load(const Complex& z) {
         return _mm512_loadu_pd(reinterpret_cast<const double*>(&z));
@@ -34,11 +34,11 @@ struct AVX512 {
 
     static Pack cmul(Pack a, Pack b) {
         const Pack b_flip = _mm512_permute_pd(b, 0x55);  // swap elements in 128bit lane
-        const Pack a_re   = _mm512_movedup_pd(a);        // = permute(a, 0x00)
-        const Pack a_im   = _mm512_permute_pd(a, 0xFF);
-        const Pack t0     = _mm512_mul_pd(a_re, b);
-        const Pack t1     = _mm512_mul_pd(a_im, b_flip);
-        const Pack nms    = _mm512_setr_pd(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+        const Pack a_re = _mm512_movedup_pd(a);          // = permute(a, 0x00)
+        const Pack a_im = _mm512_permute_pd(a, 0xFF);
+        const Pack t0 = _mm512_mul_pd(a_re, b);
+        const Pack t1 = _mm512_mul_pd(a_im, b_flip);
+        const Pack nms = _mm512_setr_pd(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
         return _mm512_fmadd_pd(t1, nms, t0);  // arbr-aibi, arbi+aibr
     }
 

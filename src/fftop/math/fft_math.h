@@ -33,7 +33,7 @@ inline bool is_power_of(std::size_t n, std::size_t base) {
     if (is_power_of_two(base)) {
         if (!is_power_of_two(n)) return false;
         const unsigned base_exp = trailing_zeros(base);
-        const unsigned n_exp    = trailing_zeros(n);
+        const unsigned n_exp = trailing_zeros(n);
         return n_exp % base_exp == 0;
     }
     // general case
@@ -66,8 +66,8 @@ inline std::size_t digit_reverse(std::size_t index, std::size_t n, std::size_t r
     // fast path for power of 2
     if (is_power_of_two(radix)) {
         const std::size_t digit_mask = radix - 1;
-        const unsigned digit_bits    = trailing_zeros(radix);
-        std::size_t reversed         = 0;
+        const unsigned digit_bits = trailing_zeros(radix);
+        std::size_t reversed = 0;
         for (std::size_t rest = n; rest > 1; rest >>= digit_bits) {
             reversed = (reversed << digit_bits) | (index & digit_mask);
             index >>= digit_bits;

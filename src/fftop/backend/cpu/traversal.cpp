@@ -34,7 +34,7 @@ void RecursiveTraversalStrategy::recurse(Complex* data, std::size_t n, Direction
                                          const Twiddles& T) const {
     if (n <= 1) return;
 
-    const std::size_t r   = butterfly.radix();
+    const std::size_t r = butterfly.radix();
     const std::size_t sub = n / r;
 
     // even and odd partitioning
@@ -55,7 +55,7 @@ void IterativeTraversalStrategy::run(Complex* data, std::size_t n, Direction dir
     for (std::size_t stride = 1; stride < n; stride *= r) {
         const std::size_t group_size = stride * r;
         const std::size_t num_groups = n / group_size;
-        const Complex* Ws            = T.stage(stride);
+        const Complex* Ws = T.stage(stride);
 
         const bool par = use_parallel(threads, num_groups);
         FFTOP_OMP_FOR_IF(par, threads)

@@ -12,12 +12,12 @@ namespace FFTop {
 // TODO: calibrate after bench
 // TODO (maybe): measure mode (similar to cuDNN benchmark)
 struct EstimateParams {
-    std::size_t dft_max                = 8;  // run direct DFT for N < dft_max
+    std::size_t dft_max = 8;  // run direct DFT for N < dft_max
     std::size_t parallel_work_per_core = std::size_t(1)
                                          << 15;  // only parallelize if Nlog2(N) > wpc * n_threads
-    double l2_fraction     = 0.5;                // fraction of L2 an in-cache FFT can use
+    double l2_fraction = 0.5;                    // fraction of L2 an in-cache FFT can use
     std::size_t default_l2 = std::size_t(1) << 20;
-    std::size_t gpu_min    = std::size_t(1) << 16;  // (for Auto only): use GPU only if N > gpu_min
+    std::size_t gpu_min = std::size_t(1) << 16;  // (for Auto only): use GPU only if N > gpu_min
 };
 
 // Plan CPUConfig from hardware specs
@@ -43,6 +43,7 @@ public:
     GPUConfig plan(std::size_t n) const;
 private:
     GPUConfig cfg_;
+    std::size_t max_column_;  // longest StockhamSmem column (power of 2)
 };
 
 class Planner {

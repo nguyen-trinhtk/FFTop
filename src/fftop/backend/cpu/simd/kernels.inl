@@ -42,8 +42,8 @@ void radix2(Complex* data, std::size_t stride, Direction dir, const Complex* Ws)
         // the rest: scalar
         const Complex a0 = x0[k];
         const Complex a1 = cmul(twiddle_at<Kernel>(Ws, k, dir), x1[k]);
-        x0[k]            = a0 + a1;
-        x1[k]            = a0 - a1;
+        x0[k] = a0 + a1;
+        x1[k] = a0 - a1;
     }
 }
 
@@ -56,9 +56,9 @@ void radix4(Complex* data, std::size_t stride, Direction dir, const Complex* Ws)
     Complex* x2 = x1 + stride;
     Complex* x3 = x2 + stride;
 
-    const Complex* W1  = Ws;               // W^k
-    const Complex* W2  = Ws + stride;      // W^2k
-    const Complex* W3  = Ws + 2 * stride;  // W^3k
+    const Complex* W1 = Ws;               // W^k
+    const Complex* W2 = Ws + stride;      // W^2k
+    const Complex* W3 = Ws + 2 * stride;  // W^3k
     const bool forward = (dir == Direction::Forward);
 
     std::size_t k = 0;
@@ -69,10 +69,10 @@ void radix4(Complex* data, std::size_t stride, Direction dir, const Complex* Ws)
         const Pack a2 = Kernel::cmul(load_w<Kernel>(W2, k, dir), Kernel::load(x2[k]));  // w^2 * x2
         const Pack a3 = Kernel::cmul(load_w<Kernel>(W3, k, dir), Kernel::load(x3[k]));  // w^3 * x3
 
-        const Pack even_sum  = Kernel::add(a0, a2);
+        const Pack even_sum = Kernel::add(a0, a2);
         const Pack even_diff = Kernel::sub(a0, a2);
-        const Pack odd_sum   = Kernel::add(a1, a3);
-        const Pack odd_diff  = Kernel::sub(a1, a3);
+        const Pack odd_sum = Kernel::add(a1, a3);
+        const Pack odd_diff = Kernel::sub(a1, a3);
 
         const Pack odd_turn = forward ? Kernel::mul_minus_j(odd_diff) : Kernel::mul_j(odd_diff);
 
@@ -88,12 +88,12 @@ void radix4(Complex* data, std::size_t stride, Direction dir, const Complex* Ws)
         const Complex a2 = cmul(twiddle_at<Kernel>(W2, k, dir), x2[k]);
         const Complex a3 = cmul(twiddle_at<Kernel>(W3, k, dir), x3[k]);
 
-        const Complex even_sum  = a0 + a2;
+        const Complex even_sum = a0 + a2;
         const Complex even_diff = a0 - a2;
-        const Complex odd_sum   = a1 + a3;
-        const Complex odd_diff  = a1 - a3;
-        const Complex odd_turn  = forward ? Complex{odd_diff.imag(), -odd_diff.real()}
-                                          : Complex{-odd_diff.imag(), odd_diff.real()};
+        const Complex odd_sum = a1 + a3;
+        const Complex odd_diff = a1 - a3;
+        const Complex odd_turn = forward ? Complex{odd_diff.imag(), -odd_diff.real()}
+                                         : Complex{-odd_diff.imag(), odd_diff.real()};
 
         x0[k] = even_sum + odd_sum;
         x1[k] = even_diff + odd_turn;

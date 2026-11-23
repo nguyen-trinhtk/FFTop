@@ -14,7 +14,7 @@ constexpr size_t MAX_RADIX = 32;  // at most radix-32 (which is very unlikely)
 // Forward twiddles table for a (n, radix) set
 // Note: use conjugate for inverse FFT
 struct Twiddles {
-    std::size_t n     = 0;
+    std::size_t n = 0;
     std::size_t radix = 0;
     std::vector<Complex> w;  // twiddles stored stage-by-stage
 

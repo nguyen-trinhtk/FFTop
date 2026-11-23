@@ -13,7 +13,7 @@ namespace FFTop::CPU {
 // TODO: generalization (TFT) / mixed radix
 class IRadixR {
 public:
-    virtual ~IRadixR()                = default;
+    virtual ~IRadixR() = default;
     virtual std::size_t radix() const = 0;
     bool supports(std::size_t n) const { return Math::is_power_of(n, radix()); }
 

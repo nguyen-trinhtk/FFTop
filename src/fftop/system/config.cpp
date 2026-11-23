@@ -17,17 +17,17 @@ std::string bytes_str(std::size_t b) {
 
 SystemConfig detect_system_config() {
     SystemConfig cfg;
-    cfg.cpu                 = detect_cpu_name();
-    cfg.cpu_threads         = detect_thread_count();
-    cfg.cpu_cores           = detect_core_count();
+    cfg.cpu = detect_cpu_name();
+    cfg.cpu_threads = detect_thread_count();
+    cfg.cpu_cores = detect_core_count();
     const CacheSizes caches = detect_cache_sizes();
-    cfg.l1d_bytes           = caches.l1d;
-    cfg.l2_bytes            = caches.l2;
-    cfg.l3_bytes            = caches.l3;
-    cfg.simd                = detect_simd();
-    cfg.openmp              = detect_openmp();
-    cfg.nvidia_gpu          = detect_nvidia_gpu();
-    cfg.cuda                = detect_cuda();
+    cfg.l1d_bytes = caches.l1d;
+    cfg.l2_bytes = caches.l2;
+    cfg.l3_bytes = caches.l3;
+    cfg.simd = detect_simd();
+    cfg.openmp = detect_openmp();
+    cfg.nvidia_gpu = detect_nvidia_gpu();
+    cfg.cuda = detect_cuda();
     if (cfg.cuda) cfg.gpu = detect_gpu_info();
     return cfg;
 }
@@ -50,8 +50,10 @@ std::string describe_system(const SystemConfig& cfg) {
     if (cfg.cuda) {
         const GPUInfo& g = cfg.gpu;
         out << "gpu:     " << g.name << "  (cc " << g.cc_major << '.' << g.cc_minor << ", "
-            << g.sm_count << " SMs, " << bytes_str(g.smem_per_block) << " smem/block, "
-            << g.max_threads_per_block << " threads/block)\n";
+            << g.sm_count << " SMs, " << bytes_str(g.smem_per_block) << " smem/block ("
+            << bytes_str(g.smem_per_block_optin) << " opt-in), " << bytes_str(g.smem_per_sm)
+            << " smem/SM, " << g.max_threads_per_block << " threads/block, "
+            << g.max_threads_per_sm << " threads/SM)\n";
     }
     return out.str();
 }

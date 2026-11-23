@@ -1,4 +1,4 @@
-# Benchmark
+<!-- # Benchmark
 
 Each figure is one question: two variants, one axis, everything else held fixed.
 C++ only times a spec. `bench/config/default.yaml` names the questions and axis defaults.
@@ -49,6 +49,9 @@ not timed.
 | `scalar-vs-simd` | Does vectorizing the kernel help? | iterative, r2, serial | ISA (this host) |
 | `serial-vs-openmp` | Do extra threads help when N is large? | iterative, r2, scalar | threads, large N |
 | `conclusion` | How much did the CPU work buy us? | — | iterative r2 scalar vs best |
+| `dft-vs-fft` | Below which N is the plain DFT faster? (calibrates `dft_max`) | r2, scalar, serial | dft vs iterative, \(N\le 2^7\) |
+| `iterative-vs-four-step` | Above which N does cache blocking pay off? | host SIMD, OpenMP | traversal, \(N\ge 2^{12}\) |
+| `planner-vs-best` | Does Estimate pick a plan at least as fast as `best`? | — | best vs `auto` |
 
 SIMD on one machine is scalar vs the compiled host kernel (NEON here, AVX2 on
 x86). Overlay two `bench.csv` files to put NEON and AVX2 on the same figure.
@@ -59,13 +62,22 @@ OpenMP writes `serial-vs-openmp.png` (time vs N) and
 `best` is iterative, radix-4 when \(N=4^p\) else radix-2, host SIMD, and
 OpenMP at `cpu_threads` when the build has it.
 
+Spec rows force a config; the planner is bypassed. Traversals: `iterative`,
+`recursive`, `dft`, `four-step` (row length from the planner's balanced split).
+Backend `auto` runs whatever the planner picks (the other columns are ignored;
+the choice is printed to stderr). The `threads` column applies to that run only
+(OpenMP `num_threads`), with no global `omp_set_num_threads`.
+
 ## GPU kernel sweep
 
 Three kernel strategies, one axis (`traversal`):
 
-- `cooley-tukey` — in-place Cooley–Tukey in global memory (bit-reversal + one kernel per stage)
-- `stockham-global` — self-sorting Stockham, ping-pong global memory, no bit-reversal
-- `stockham-shared` — Stockham inner FFTs in shared memory; large N is factored as \(N_1\times N_2\)
+- `cooley-tukey-gmem` — in-place Cooley–Tukey in global memory (bit-reversal + one kernel per stage)
+- `stockham-gmem` — self-sorting Stockham, ping-pong global memory, no bit-reversal
+- `stockham-smem` — Stockham inner FFTs in shared memory; large N is factored as \(N_1\times N_2\)
+
+Block size and the number of shared-memory passes come from the GPU planner (longest
+column from the device's smem and thread limits, log2 N spread evenly over the passes).
 
 ```bash
 python bench/bench.py \
@@ -76,4 +88,4 @@ python bench/bench.py \
 Writes runtime, effective bandwidth, estimated global traffic, and throughput
 plots (`gpu-kernel-strategies_*.png` plus a combined `_metrics.png`).
 
-For Colab, open `gpu-notebooks/stockham_sweep_colab.ipynb` from the `colab-gpu` branch.
+For Colab, open `gpu-notebooks/stockham_sweep_colab.ipynb` from the `colab-gpu` branch. -->

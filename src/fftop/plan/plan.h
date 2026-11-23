@@ -22,20 +22,25 @@ enum class CPUAlgorithm {
 // Config for CPU plan
 struct CPUConfig {
     CPUAlgorithm algorithm = CPUAlgorithm::Iterative;
-    Radix radix            = Radix::Radix2;
-    SIMD simd              = SIMD::Scalar;
-    int threads            = 1;
-    std::size_t split      = 0;  // Four-step FFT: N = N1 x N2 with N2 = split
+    Radix radix = Radix::Radix2;
+    SIMD simd = SIMD::Scalar;
+    int threads = 1;
+    std::size_t split = 0;  // Four-step FFT: N = N1 x N2 with N2 = split
 };
 
-enum class GPUKernel { CooleyTukeyGlobal, StockhamGlobal, StockhamShared };
+enum class GPUKernel { CooleyTukeyGmem, StockhamGmem, StockhamSmem };
+
+// StockhamSmem: columns per block, one 128 B cache line per row (same on every NVIDIA arch)
+constexpr unsigned GPU_TILE_WIDTH = 128 / sizeof(Complex);
+// StockhamSmem: smem per column point of a block (GPU_TILE_WIDTH points, ping-pong)
+constexpr std::size_t GPU_SMEM_ROW_BYTES = 2 * GPU_TILE_WIDTH * sizeof(Complex);
 
 // Config for GPU plan
 struct GPUConfig {
-    GPUKernel kernel    = GPUKernel::StockhamShared;
-    Radix radix         = Radix::Radix2;  // Note: Stockham are radix-2 only
-    unsigned block_dim  = 256;
-    unsigned tile_size  = 256;
+    GPUKernel kernel = GPUKernel::StockhamSmem;
+    Radix radix = Radix::Radix2;  // Note: Stockham are radix-2 only
+    unsigned block_dim = 256;
+    unsigned passes = 0;  // StockhamSmem: N = N1 x ... x N_passes, log2 N spread evenly
     bool pinned_staging = true;  // copy through a pinned host buffer
 };
 

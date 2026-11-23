@@ -11,7 +11,7 @@ inline Buffer dft(const Buffer& input, Direction direction = Direction::Forward)
     Buffer output(n);
     if (n == 0) return output;
 
-    const Real sign  = direction == Direction::Forward ? Real(-1) : Real(1);
+    const Real sign = direction == Direction::Forward ? Real(-1) : Real(1);
     const Real twopi = Real(2) * std::acos(Real(-1));
 
     for (std::size_t k = 0; k < n; ++k) {

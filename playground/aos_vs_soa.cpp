@@ -41,7 +41,7 @@ AoS make_aos(std::size_t n) {
         x.a[i] = {double(i) * 0.001, double(i) * 0.002};
         x.b[i] = {double(i) * 0.003, double(i) * 0.004};
         const double t = 6.283185307179586 * double(i) / double(n);
-        x.W[i]         = {std::cos(t), -std::sin(t)};
+        x.W[i] = {std::cos(t), -std::sin(t)};
     }
     return x;
 }
@@ -73,11 +73,11 @@ inline void keep(T& x) {
 
 inline float64x2_t cmul_aos(float64x2_t w, float64x2_t b) {
     const float64x2_t b_flip = vextq_f64(b, b, 1);
-    const float64x2_t wr     = vdupq_laneq_f64(w, 0);
-    const float64x2_t wi     = vdupq_laneq_f64(w, 1);
-    const float64x2_t t0     = vmulq_f64(wr, b);
-    const float64x2_t t1     = vmulq_f64(wi, b_flip);
-    const float64x2_t nms    = {-1.0, 1.0};
+    const float64x2_t wr = vdupq_laneq_f64(w, 0);
+    const float64x2_t wi = vdupq_laneq_f64(w, 1);
+    const float64x2_t t0 = vmulq_f64(wr, b);
+    const float64x2_t t1 = vmulq_f64(wi, b_flip);
+    const float64x2_t nms = {-1.0, 1.0};
     return vfmaq_f64(t0, t1, nms);
 }
 
@@ -88,10 +88,10 @@ void r2_aos_scalar(Complex* a, Complex* b, const Complex* W, std::size_t n) {
         const double ti = W[i].re * b[i].im + W[i].im * b[i].re;
         const double ar = a[i].re;
         const double ai = a[i].im;
-        a[i].re         = ar + tr;
-        a[i].im         = ai + ti;
-        b[i].re         = ar - tr;
-        b[i].im         = ai - ti;
+        a[i].re = ar + tr;
+        a[i].im = ai + ti;
+        b[i].re = ar - tr;
+        b[i].im = ai - ti;
     }
 }
 
@@ -101,10 +101,10 @@ void r2_aos_autovec(Complex* a, Complex* b, const Complex* W, std::size_t n) {
         const double ti = W[i].re * b[i].im + W[i].im * b[i].re;
         const double ar = a[i].re;
         const double ai = a[i].im;
-        a[i].re         = ar + tr;
-        a[i].im         = ai + ti;
-        b[i].re         = ar - tr;
-        b[i].im         = ai - ti;
+        a[i].re = ar + tr;
+        a[i].im = ai + ti;
+        b[i].re = ar - tr;
+        b[i].im = ai - ti;
     }
 }
 
@@ -116,10 +116,10 @@ void r2_soa_scalar(double* ar, double* ai, double* br, double* bi, const double*
         const double ti = Wr[i] * bi[i] + Wi[i] * br[i];
         const double a_r = ar[i];
         const double a_i = ai[i];
-        ar[i]            = a_r + tr;
-        ai[i]            = a_i + ti;
-        br[i]            = a_r - tr;
-        bi[i]            = a_i - ti;
+        ar[i] = a_r + tr;
+        ai[i] = a_i + ti;
+        br[i] = a_r - tr;
+        bi[i] = a_i - ti;
     }
 }
 
@@ -130,17 +130,17 @@ void r2_soa_autovec(double* ar, double* ai, double* br, double* bi, const double
         const double ti = Wr[i] * bi[i] + Wi[i] * br[i];
         const double a_r = ar[i];
         const double a_i = ai[i];
-        ar[i]            = a_r + tr;
-        ai[i]            = a_i + ti;
-        br[i]            = a_r - tr;
-        bi[i]            = a_i - ti;
+        ar[i] = a_r + tr;
+        ai[i] = a_i + ti;
+        br[i] = a_r - tr;
+        bi[i] = a_i - ti;
     }
 }
 
 void r2_aos_neon(Complex* a, Complex* b, const Complex* W, std::size_t n) {
     for (std::size_t i = 0; i < n; ++i) {
         const float64x2_t a0 = vld1q_f64(&a[i].re);
-        const float64x2_t t  = cmul_aos(vld1q_f64(&W[i].re), vld1q_f64(&b[i].re));
+        const float64x2_t t = cmul_aos(vld1q_f64(&W[i].re), vld1q_f64(&b[i].re));
         vst1q_f64(&a[i].re, vaddq_f64(a0, t));
         vst1q_f64(&b[i].re, vsubq_f64(a0, t));
     }

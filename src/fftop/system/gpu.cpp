@@ -32,9 +32,13 @@ GPUInfo detect_gpu_info() {
     info.cc_major = prop.major;
     info.cc_minor = prop.minor;
     // Block-related info (sm, smem, max threads)
-    info.sm_count              = prop.multiProcessorCount;
-    info.smem_per_block        = prop.sharedMemPerBlock;
+    info.sm_count = prop.multiProcessorCount;
+    info.smem_per_block = prop.sharedMemPerBlock;
+    info.smem_per_block_optin = prop.sharedMemPerBlockOptin;
+    info.smem_per_sm = prop.sharedMemPerMultiprocessor;
+    info.reserved_smem_per_block = prop.reservedSharedMemPerBlock;
     info.max_threads_per_block = prop.maxThreadsPerBlock;
+    info.max_threads_per_sm = prop.maxThreadsPerMultiProcessor;
 #endif
     return info;
 }

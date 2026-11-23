@@ -8,7 +8,7 @@ namespace FFTop::CPU {
 // "Scalar-vector" kernel
 struct Scalar {
     static constexpr std::size_t width = 1;
-    using Pack                         = Complex;
+    using Pack = Complex;
 
     static Pack load(const Complex& z) { return z; }
     static void store(Complex& z, Pack v) { z = v; }

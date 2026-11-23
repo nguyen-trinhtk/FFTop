@@ -88,16 +88,16 @@ SIMD x86_simd() {
     if (max_leaf < 1) return SIMD::Scalar;
     // Check OS register saving and AVX support
     cpuid(1, 0, r);
-    const bool fma     = r[2] & (1u << 12);
+    const bool fma = r[2] & (1u << 12);
     const bool osxsave = r[2] & (1u << 27);
-    const bool avx     = r[2] & (1u << 28);
-    const auto xcr     = osxsave ? xcr0() : 0ull;
+    const bool avx = r[2] & (1u << 28);
+    const auto xcr = osxsave ? xcr0() : 0ull;
     // Check AVX2/AVX-512
-    bool avx2    = false;
+    bool avx2 = false;
     bool avx512f = false;
     if (max_leaf >= 7) {
         cpuid(7, 0, r);
-        avx2    = r[1] & (1u << 5);
+        avx2 = r[1] & (1u << 5);
         avx512f = r[1] & (1u << 16);
     }
     // Check if OS saves widest-register on context switch
@@ -124,7 +124,7 @@ std::string sysctl_str(const char* name) {
 
 std::uint64_t sysctl_u64(const char* sysctl_key) {
     std::uint64_t v = 0;  // 32bit answer will fill low bytes
-    size_t n        = sizeof v;
+    size_t n = sizeof v;
     if (sysctlbyname(sysctl_key, &v, &n, nullptr, 0) != 0) return 0;  // missing/error
     return v;
 }
@@ -267,7 +267,7 @@ CacheSizes detect_cache_sizes() {
 #if defined(__APPLE__)
     // Apple Silicon: prefer performance core (perflevel0)
     c.l1d = static_cast<std::size_t>(sysctl_u64("hw.perflevel0.l1dcachesize"));
-    c.l2  = static_cast<std::size_t>(sysctl_u64("hw.perflevel0.l2cachesize"));
+    c.l2 = static_cast<std::size_t>(sysctl_u64("hw.perflevel0.l2cachesize"));
     // fallback to any cores
     if (c.l1d == 0) c.l1d = static_cast<std::size_t>(sysctl_u64("hw.l1dcachesize"));
     if (c.l2 == 0) c.l2 = static_cast<std::size_t>(sysctl_u64("hw.l2cachesize"));

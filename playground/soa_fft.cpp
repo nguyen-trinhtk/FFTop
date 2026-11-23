@@ -28,7 +28,7 @@ enum class Dir { Fwd, Inv };
 
 inline std::size_t digit_reverse(std::size_t index, std::size_t n, std::size_t radix) {
     const std::size_t digit_mask = radix - 1;
-    unsigned          bits       = 0;
+    unsigned bits = 0;
     for (std::size_t r = radix; r > 1; r >>= 1) ++bits;
     std::size_t reversed = 0;
     for (std::size_t rest = n; rest > 1; rest >>= bits) {
@@ -58,15 +58,15 @@ void bitrev_soa(double* re, double* im, std::size_t n, std::size_t radix) {
 void make_twiddles_aos(Complex* W, std::size_t n) {
     for (std::size_t k = 0; k < n; ++k) {
         const double a = -6.28318530717958647692 * double(k) / double(n);
-        W[k]           = {std::cos(a), std::sin(a)};
+        W[k] = {std::cos(a), std::sin(a)};
     }
 }
 
 void make_twiddles_soa(double* Wr, double* Wi, std::size_t n) {
     for (std::size_t k = 0; k < n; ++k) {
         const double a = -6.28318530717958647692 * double(k) / double(n);
-        Wr[k]          = std::cos(a);
-        Wi[k]          = std::sin(a);
+        Wr[k] = std::cos(a);
+        Wi[k] = std::sin(a);
     }
 }
 
@@ -116,9 +116,9 @@ inline float64x2_t maybe_neg(float64x2_t v, Dir dir) {
 
 inline float64x2_t cmul_aos(float64x2_t w, float64x2_t b) {
     const float64x2_t b_flip = vextq_f64(b, b, 1);
-    const float64x2_t wr     = vdupq_laneq_f64(w, 0);
-    const float64x2_t wi     = vdupq_laneq_f64(w, 1);
-    const float64x2_t nms    = {-1.0, 1.0};
+    const float64x2_t wr = vdupq_laneq_f64(w, 0);
+    const float64x2_t wi = vdupq_laneq_f64(w, 1);
+    const float64x2_t nms = {-1.0, 1.0};
     return vfmaq_f64(vmulq_f64(wr, b), vmulq_f64(wi, b_flip), nms);
 }
 
@@ -132,8 +132,8 @@ inline float64x2_t conj_aos(float64x2_t z) {
 template <bool Autovec>
 void r2_aos_group(Complex* x, std::size_t off, std::size_t stride, Dir dir, const Complex* W,
                   std::size_t n) {
-    Complex*          x0   = x + off;
-    Complex*          x1   = x0 + stride;
+    Complex* x0 = x + off;
+    Complex* x1 = x0 + stride;
     const std::size_t step = n / (2 * stride);
     if constexpr (!Autovec) {
         NOVEC
@@ -159,14 +159,14 @@ void r2_aos_group(Complex* x, std::size_t off, std::size_t stride, Dir dir, cons
 
 void r2_aos_neon_group(Complex* x, std::size_t off, std::size_t stride, Dir dir, const Complex* W,
                        std::size_t n) {
-    Complex*          x0   = x + off;
-    Complex*          x1   = x0 + stride;
+    Complex* x0 = x + off;
+    Complex* x1 = x0 + stride;
     const std::size_t step = n / (2 * stride);
     for (std::size_t k = 0; k < stride; ++k) {
         float64x2_t w = vld1q_f64(reinterpret_cast<const double*>(&W[k * step]));
         if (dir == Dir::Inv) w = conj_aos(w);
         const float64x2_t a0 = vld1q_f64(reinterpret_cast<double*>(&x0[k]));
-        const float64x2_t t  = cmul_aos(w, vld1q_f64(reinterpret_cast<double*>(&x1[k])));
+        const float64x2_t t = cmul_aos(w, vld1q_f64(reinterpret_cast<double*>(&x1[k])));
         vst1q_f64(reinterpret_cast<double*>(&x0[k]), vaddq_f64(a0, t));
         vst1q_f64(reinterpret_cast<double*>(&x1[k]), vsubq_f64(a0, t));
     }
@@ -175,10 +175,10 @@ void r2_aos_neon_group(Complex* x, std::size_t off, std::size_t stride, Dir dir,
 template <bool Autovec>
 void r2_soa_group(double* re, double* im, std::size_t off, std::size_t stride, Dir dir,
                   const double* Wr, const double* Wi, std::size_t n) {
-    double*           r0   = re + off;
-    double*           i0   = im + off;
-    double*           r1   = r0 + stride;
-    double*           i1   = i0 + stride;
+    double* r0 = re + off;
+    double* i0 = im + off;
+    double* r1 = r0 + stride;
+    double* i1 = i0 + stride;
     const std::size_t step = n / (2 * stride);
     if constexpr (!Autovec) {
         NOVEC
@@ -208,12 +208,12 @@ void r2_soa_group(double* re, double* im, std::size_t off, std::size_t stride, D
 
 void r2_soa_neon_group(double* re, double* im, std::size_t off, std::size_t stride, Dir dir,
                        const double* Wr, const double* Wi, std::size_t n) {
-    double*           r0   = re + off;
-    double*           i0   = im + off;
-    double*           r1   = r0 + stride;
-    double*           i1   = i0 + stride;
+    double* r0 = re + off;
+    double* i0 = im + off;
+    double* r1 = r0 + stride;
+    double* i1 = i0 + stride;
     const std::size_t step = n / (2 * stride);
-    std::size_t       k    = 0;
+    std::size_t k = 0;
     for (; k + 2 <= stride; k += 2) {
         const float64x2_t wr = maybe_neg(load2(Wr, k, step), Dir::Fwd);
         const float64x2_t wi = maybe_neg(load2(Wi, k, step), dir);
@@ -245,13 +245,13 @@ void r2_soa_neon_group(double* re, double* im, std::size_t off, std::size_t stri
 template <bool Autovec>
 void r4_aos_group(Complex* x, std::size_t off, std::size_t stride, Dir dir, const Complex* W,
                   std::size_t n) {
-    Complex*          x0      = x + off;
-    Complex*          x1      = x0 + stride;
-    Complex*          x2      = x1 + stride;
-    Complex*          x3      = x2 + stride;
-    const std::size_t step    = n / (4 * stride);
-    const bool        forward = dir == Dir::Fwd;
-    auto              body    = [&](std::size_t k) {
+    Complex* x0 = x + off;
+    Complex* x1 = x0 + stride;
+    Complex* x2 = x1 + stride;
+    Complex* x3 = x2 + stride;
+    const std::size_t step = n / (4 * stride);
+    const bool forward = dir == Dir::Fwd;
+    auto body = [&](std::size_t k) {
         double wr, wi, t1r, t1i, t2r, t2i, t3r, t3i;
         tw(W, k, step, dir, wr, wi);
         cmul(wr, wi, x1[k].real(), x1[k].imag(), t1r, t1i);
@@ -265,10 +265,10 @@ void r4_aos_group(Complex* x, std::size_t off, std::size_t stride, Dir dir, cons
         const double odr = t1r - t3r, odi = t1i - t3i;
         const double otr = forward ? odi : -odi;
         const double oti = forward ? -odr : odr;
-        x0[k]            = {esr + osr, esi + osi};
-        x1[k]            = {edr + otr, edi + oti};
-        x2[k]            = {esr - osr, esi - osi};
-        x3[k]            = {edr - otr, edi - oti};
+        x0[k] = {esr + osr, esi + osi};
+        x1[k] = {edr + otr, edi + oti};
+        x2[k] = {esr - osr, esi - osi};
+        x3[k] = {edr - otr, edi - oti};
     };
     if constexpr (!Autovec) {
         NOVEC
@@ -281,17 +281,17 @@ void r4_aos_group(Complex* x, std::size_t off, std::size_t stride, Dir dir, cons
 template <bool Autovec>
 void r4_soa_group(double* re, double* im, std::size_t off, std::size_t stride, Dir dir,
                   const double* Wr, const double* Wi, std::size_t n) {
-    double*           r0      = re + off;
-    double*           i0      = im + off;
-    double*           r1      = r0 + stride;
-    double*           i1      = i0 + stride;
-    double*           r2      = r1 + stride;
-    double*           i2      = i1 + stride;
-    double*           r3      = r2 + stride;
-    double*           i3      = i2 + stride;
-    const std::size_t step    = n / (4 * stride);
-    const bool        forward = dir == Dir::Fwd;
-    auto              body    = [&](std::size_t k) {
+    double* r0 = re + off;
+    double* i0 = im + off;
+    double* r1 = r0 + stride;
+    double* i1 = i0 + stride;
+    double* r2 = r1 + stride;
+    double* i2 = i1 + stride;
+    double* r3 = r2 + stride;
+    double* i3 = i2 + stride;
+    const std::size_t step = n / (4 * stride);
+    const bool forward = dir == Dir::Fwd;
+    auto body = [&](std::size_t k) {
         double wr, wi, t1r, t1i, t2r, t2i, t3r, t3i;
         tw(Wr, Wi, k, step, dir, wr, wi);
         cmul(wr, wi, r1[k], i1[k], t1r, t1i);
@@ -305,14 +305,14 @@ void r4_soa_group(double* re, double* im, std::size_t off, std::size_t stride, D
         const double odr = t1r - t3r, odi = t1i - t3i;
         const double otr = forward ? odi : -odi;
         const double oti = forward ? -odr : odr;
-        r0[k]            = esr + osr;
-        i0[k]            = esi + osi;
-        r1[k]            = edr + otr;
-        i1[k]            = edi + oti;
-        r2[k]            = esr - osr;
-        i2[k]            = esi - osi;
-        r3[k]            = edr - otr;
-        i3[k]            = edi - oti;
+        r0[k] = esr + osr;
+        i0[k] = esi + osi;
+        r1[k] = edr + otr;
+        i1[k] = edi + oti;
+        r2[k] = esr - osr;
+        i2[k] = esi - osi;
+        r3[k] = edr - otr;
+        i3[k] = edi - oti;
     };
     if constexpr (!Autovec) {
         NOVEC
@@ -331,12 +331,12 @@ inline float64x2_t load2_scaled(const double* p, std::size_t k, std::size_t mul,
 
 void r4_aos_neon_group(Complex* x, std::size_t off, std::size_t stride, Dir dir, const Complex* W,
                        std::size_t n) {
-    Complex*          x0      = x + off;
-    Complex*          x1      = x0 + stride;
-    Complex*          x2      = x1 + stride;
-    Complex*          x3      = x2 + stride;
-    const std::size_t step    = n / (4 * stride);
-    const bool        forward = dir == Dir::Fwd;
+    Complex* x0 = x + off;
+    Complex* x1 = x0 + stride;
+    Complex* x2 = x1 + stride;
+    Complex* x3 = x2 + stride;
+    const std::size_t step = n / (4 * stride);
+    const bool forward = dir == Dir::Fwd;
     for (std::size_t k = 0; k < stride; ++k) {
         auto lw = [&](std::size_t m) {
             float64x2_t w = vld1q_f64(reinterpret_cast<const double*>(&W[m * k * step]));
@@ -362,23 +362,23 @@ void r4_aos_neon_group(Complex* x, std::size_t off, std::size_t stride, Dir dir,
 
 void r4_soa_neon_group(double* re, double* im, std::size_t off, std::size_t stride, Dir dir,
                        const double* Wr, const double* Wi, std::size_t n) {
-    double*           r0      = re + off;
-    double*           i0      = im + off;
-    double*           r1      = r0 + stride;
-    double*           i1      = i0 + stride;
-    double*           r2      = r1 + stride;
-    double*           i2      = i1 + stride;
-    double*           r3      = r2 + stride;
-    double*           i3      = i2 + stride;
-    const std::size_t step    = n / (4 * stride);
-    const bool        forward = dir == Dir::Fwd;
-    std::size_t       k       = 0;
+    double* r0 = re + off;
+    double* i0 = im + off;
+    double* r1 = r0 + stride;
+    double* i1 = i0 + stride;
+    double* r2 = r1 + stride;
+    double* i2 = i1 + stride;
+    double* r3 = r2 + stride;
+    double* i3 = i2 + stride;
+    const std::size_t step = n / (4 * stride);
+    const bool forward = dir == Dir::Fwd;
+    std::size_t k = 0;
     for (; k + 2 <= stride; k += 2) {
         auto wmul = [&](std::size_t mul) {
-            const float64x2_t wr  = load2_scaled(Wr, k, mul, step);
-            const float64x2_t wi  = maybe_neg(load2_scaled(Wi, k, mul, step), dir);
-            const double*     br  = (mul == 1 ? r1 : mul == 2 ? r2 : r3);
-            const double*     bi  = (mul == 1 ? i1 : mul == 2 ? i2 : i3);
+            const float64x2_t wr = load2_scaled(Wr, k, mul, step);
+            const float64x2_t wi = maybe_neg(load2_scaled(Wi, k, mul, step), dir);
+            const double* br = (mul == 1 ? r1 : mul == 2 ? r2 : r3);
+            const double* bi = (mul == 1 ? i1 : mul == 2 ? i2 : i3);
             const float64x2_t b_r = vld1q_f64(br + k);
             const float64x2_t b_i = vld1q_f64(bi + k);
             return std::pair<float64x2_t, float64x2_t>{
@@ -386,11 +386,11 @@ void r4_soa_neon_group(double* re, double* im, std::size_t off, std::size_t stri
                 vfmaq_f64(vmulq_f64(wr, b_i), wi, b_r),
             };
         };
-        const float64x2_t ar  = vld1q_f64(r0 + k);
-        const float64x2_t ai  = vld1q_f64(i0 + k);
-        const auto        a1  = wmul(1);
-        const auto        a2  = wmul(2);
-        const auto        a3  = wmul(3);
+        const float64x2_t ar = vld1q_f64(r0 + k);
+        const float64x2_t ai = vld1q_f64(i0 + k);
+        const auto a1 = wmul(1);
+        const auto a2 = wmul(2);
+        const auto a3 = wmul(3);
         const float64x2_t esr = vaddq_f64(ar, a2.first);
         const float64x2_t esi = vaddq_f64(ai, a2.second);
         const float64x2_t edr = vsubq_f64(ar, a2.first);
@@ -424,14 +424,14 @@ void r4_soa_neon_group(double* re, double* im, std::size_t off, std::size_t stri
         const double odr = t1r - t3r, odi = t1i - t3i;
         const double otr = forward ? odi : -odi;
         const double oti = forward ? -odr : odr;
-        r0[k]            = esr + osr;
-        i0[k]            = esi + osi;
-        r1[k]            = edr + otr;
-        i1[k]            = edi + oti;
-        r2[k]            = esr - osr;
-        i2[k]            = esi - osi;
-        r3[k]            = edr - otr;
-        i3[k]            = edi - oti;
+        r0[k] = esr + osr;
+        i0[k] = esi + osi;
+        r1[k] = edr + otr;
+        i1[k] = edi + oti;
+        r2[k] = esr - osr;
+        i2[k] = esi - osi;
+        r3[k] = edr - otr;
+        i3[k] = edi - oti;
     }
 }
 
@@ -539,7 +539,7 @@ void dft(const Complex* x, Complex* X, std::size_t n, Dir dir) {
 double rel_err(const Complex* a, const Complex* b, std::size_t n) {
     double err = 0, scale = 0;
     for (std::size_t i = 0; i < n; ++i) {
-        err   = std::max(err, std::abs(a[i] - b[i]));
+        err = std::max(err, std::abs(a[i] - b[i]));
         scale = std::max(scale, std::abs(b[i]));
     }
     return scale > 0 ? err / scale : err;
@@ -573,7 +573,7 @@ double ns_per_sample(Fn&& fn, std::size_t n) {
 
 int check_one(const char* name, const std::vector<Complex>& got, const std::vector<Complex>& want) {
     const double e = rel_err(got.data(), want.data(), got.size());
-    const bool   ok = e < 1e-11;
+    const bool ok = e < 1e-11;
     std::printf("  %-22s  relerr=%.3e  %s\n", name, e, ok ? "ok" : "FAIL");
     return ok ? 0 : 1;
 }
@@ -584,7 +584,7 @@ int main() {
 
     auto verify = [&](std::size_t n, Dir dir) {
         std::vector<Complex> src(n), want(n), aos(n), out(n);
-        std::vector<double>  re(n), im(n), Wr(n), Wi(n);
+        std::vector<double> re(n), im(n), Wr(n), Wi(n);
         std::vector<Complex> W(n);
         mixed(src.data(), n);
         make_twiddles_aos(W.data(), n);
@@ -638,14 +638,14 @@ int main() {
 
     struct Row {
         std::size_t n;
-        double      aos_s, soa_s, aos_av, soa_av, aos_n, soa_n, cvt;
-        double      r4_aos_s, r4_soa_s, r4_aos_n, r4_soa_n, r4_cvt;
+        double aos_s, soa_s, aos_av, soa_av, aos_n, soa_n, cvt;
+        double r4_aos_s, r4_soa_s, r4_aos_n, r4_soa_n, r4_cvt;
     };
     std::vector<Row> rows;
 
     for (std::size_t n : sizes) {
         std::vector<Complex> src(n), aos(n), W(n);
-        std::vector<double>  re(n), im(n), Wr(n), Wi(n);
+        std::vector<double> re(n), im(n), Wr(n), Wi(n);
         mixed(src.data(), n);
         make_twiddles_aos(W.data(), n);
         make_twiddles_soa(Wr.data(), Wi.data(), n);

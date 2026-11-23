@@ -14,7 +14,7 @@ namespace FFTop::CPU {
 // Holds two interleaved complexes
 struct AVX2 {
     static constexpr std::size_t width = 2;
-    using Pack                         = __m256d;
+    using Pack = __m256d;
 
     static Pack load(const Complex& z) {
         return _mm256_loadu_pd(reinterpret_cast<const double*>(&z));
@@ -26,11 +26,11 @@ struct AVX2 {
 
     static Pack cmul(Pack a, Pack b) {
         const Pack b_flip = _mm256_permute_pd(b, 0x5);  // bim, bre
-        const Pack a_re   = _mm256_movedup_pd(a);
-        const Pack a_im   = _mm256_permute_pd(a, 0xF);
-        const Pack t0     = _mm256_mul_pd(a_re, b);
-        const Pack t1     = _mm256_mul_pd(a_im, b_flip);
-        const Pack nms    = _mm256_setr_pd(-1.0, 1.0, -1.0, 1.0);
+        const Pack a_re = _mm256_movedup_pd(a);
+        const Pack a_im = _mm256_permute_pd(a, 0xF);
+        const Pack t0 = _mm256_mul_pd(a_re, b);
+        const Pack t1 = _mm256_mul_pd(a_im, b_flip);
+        const Pack nms = _mm256_setr_pd(-1.0, 1.0, -1.0, 1.0);
         return _mm256_fmadd_pd(t1, nms, t0);
     }
 

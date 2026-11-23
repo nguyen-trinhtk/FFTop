@@ -11,8 +11,8 @@
 
 namespace FFTop {
 namespace {
-constexpr std::size_t TRANSPOSE_BLOCK = 8;   // tiled transpose for four-step
-constexpr std::size_t STACK_SIZE      = 64;  // keep DFT outputs on stack for tiny N
+constexpr std::size_t TRANSPOSE_BLOCK = 8;  // tiled transpose for four-step
+constexpr std::size_t STACK_SIZE = 64;      // keep DFT outputs on stack for tiny N
 
 /// @brief Transpose src into dst
 /// @param dst transposed buffer with size cols x rows (row-major)
@@ -23,7 +23,7 @@ constexpr std::size_t STACK_SIZE      = 64;  // keep DFT outputs on stack for ti
 void transpose(Complex* dst, const Complex* src, std::size_t rows, std::size_t cols, int threads) {
     using CPU::omp_index;
     const std::size_t row_blocks = Math::ceil_div(rows, TRANSPOSE_BLOCK);
-    const bool par               = CPU::use_parallel(threads, row_blocks);
+    const bool par = CPU::use_parallel(threads, row_blocks);
 
     FFTOP_OMP_FOR_IF(par, threads)
     for (omp_index rb = 0; rb < static_cast<omp_index>(row_blocks); ++rb) {
@@ -77,7 +77,7 @@ CPUFFTPlan::CPUFFTPlan(std::size_t n, const CPUConfig& cfg, std::string name)
     rows2_ = make_sub_fft(cfg.split, cfg);
     assert(rows1_.twiddles->n * rows2_.twiddles->n == n);
 
-    log_m_              = (Math::log2_floor(n) + 1) / 2;
+    log_m_ = (Math::log2_floor(n) + 1) / 2;
     const std::size_t m = std::size_t(1) << log_m_;
     lo_twiddles_.resize(m);
     for (std::size_t j = 0; j < m; ++j) lo_twiddles_[j] = root_of_unity(j, n);

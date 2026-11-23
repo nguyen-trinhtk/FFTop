@@ -74,42 +74,45 @@ void validate(const GPUConfig& cfg, std::size_t n, const GPUInfo& gpu) {
         reject(cfg, n, "block must be a power of 2 in [32, " + std::to_string(max_threads) + "]");
 
     switch (cfg.kernel) {
-        case GPUKernel::CooleyTukeyGlobal:
+        case GPUKernel::CooleyTukeyGmem:
             if (n > 1 && !Math::is_power_of(n, static_cast<std::size_t>(cfg.radix)))
                 reject(cfg, n, "N must be a power of the radix");
             return;
-        case GPUKernel::StockhamGlobal:
+        case GPUKernel::StockhamGmem:
             if (cfg.radix != Radix::Radix2) reject(cfg, n, "Stockham kernels are radix-2 only");
             return;
-        case GPUKernel::StockhamShared:
+        case GPUKernel::StockhamSmem: {
             if (cfg.radix != Radix::Radix2) reject(cfg, n, "Stockham kernels are radix-2 only");
-            // One thread per point, two double2 buffers per point in shared memory
-            if (cfg.tile_size < 2 || !Math::is_power_of(cfg.tile_size, 2) ||
-                cfg.tile_size > max_threads)
-                reject(cfg, n,
-                       "tile must be a power of 2 in [2, " + std::to_string(max_threads) + "]");
-            if (gpu.smem_per_block > 0 && 2 * std::size_t(cfg.tile_size) * 16 > gpu.smem_per_block)
-                reject(cfg, n, "tile needs more shared memory than the device has per block");
+            if (n <= 1) return;
+            const unsigned log2_n = Math::log2_floor(n);
+            if (cfg.passes < 1 || cfg.passes > log2_n)
+                reject(cfg, n, "passes must be in [1, log2 N]");
+            // Longest column, log2 N spread evenly over the passes
+            const std::size_t column = std::size_t(1) << Math::ceil_div(log2_n, cfg.passes);
+            if (gpu.smem_per_block_optin > 0 &&
+                GPU_SMEM_ROW_BYTES * column > gpu.smem_per_block_optin)
+                reject(cfg, n, "columns need more shared memory than the device has per block");
             return;
+        }
     }
     reject(cfg, n, "unknown kernel");
 }
 
 const char* to_string(GPUKernel kernel) {
     switch (kernel) {
-        case GPUKernel::CooleyTukeyGlobal:
-            return "cooley-tukey";
-        case GPUKernel::StockhamGlobal:
-            return "stockham-global";
-        case GPUKernel::StockhamShared:
-            return "stockham-shared";
+        case GPUKernel::CooleyTukeyGmem:
+            return "cooley-tukey-gmem";
+        case GPUKernel::StockhamGmem:
+            return "stockham-gmem";
+        case GPUKernel::StockhamSmem:
+            return "stockham-smem";
     }
     return "unknown";
 }
 
 std::string to_string(const GPUConfig& cfg) {
     std::string s = to_string(cfg.kernel);
-    if (cfg.kernel == GPUKernel::StockhamShared) s += " tile=" + std::to_string(cfg.tile_size);
+    if (cfg.kernel == GPUKernel::StockhamSmem) s += " passes=" + std::to_string(cfg.passes);
     s += " block=" + std::to_string(cfg.block_dim);
     s += " r" + std::to_string(static_cast<std::size_t>(cfg.radix));
     if (!cfg.pinned_staging) s += " pageable";

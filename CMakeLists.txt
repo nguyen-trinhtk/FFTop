@@ -7,15 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(fftop STATIC
-    src/fftop/backend/backend_registry.cpp
     src/fftop/backend/cpu/cpu.cpp
-    src/fftop/backend/cpu/cpu_factory.cpp
     src/fftop/backend/cpu/butterfly.cpp
-    src/fftop/backend/cpu/simd/kernel_scalar.cpp
-    src/fftop/backend/cpu/simd/kernel_avx2.cpp
-    src/fftop/backend/cpu/simd/kernel_avx512.cpp
-    src/fftop/backend/cpu/simd/kernel_neon.cpp
-    src/fftop/backend/cpu/traversal_strategy.cpp
+    src/fftop/backend/cpu/simd/scalar.cpp
+    src/fftop/backend/cpu/simd/avx2.cpp
+    src/fftop/backend/cpu/simd/avx512.cpp
+    src/fftop/backend/cpu/simd/neon.cpp
+    src/fftop/backend/cpu/traversal.cpp
     src/fftop/system/config.cpp
     src/fftop/system/cpu.cpp
     src/fftop/system/gpu.cpp
@@ -23,6 +21,7 @@ add_library(fftop STATIC
     src/fftop/fft.cpp
     src/fftop/math/twiddle.cpp
     src/fftop/plan/cache.cpp
+    src/fftop/plan/plan.cpp
     src/fftop/plan/planner.cpp
 )
 
@@ -65,13 +64,16 @@ if(FFTOP_ENABLE_OPENMP)
 endif()
 
 if(MSVC)
-    set_source_files_properties(src/fftop/backend/cpu/simd/kernel_avx2.cpp PROPERTIES
+    set_source_files_properties(src/fftop/backend/cpu/simd/avx2.cpp PROPERTIES
         COMPILE_OPTIONS "/arch:AVX2")
-    set_source_files_properties(src/fftop/backend/cpu/simd/kernel_avx512.cpp PROPERTIES
+    set_source_files_properties(src/fftop/backend/cpu/simd/avx512.cpp PROPERTIES
         COMPILE_OPTIONS "/arch:AVX512")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64|i.86")
-    set_source_files_properties(src/fftop/backend/cpu/simd/kernel_avx512.cpp PROPERTIES
-        COMPILE_OPTIONS "-mavx512f")
+# CMAKE_OSX_ARCHITECTURES covers x86_64 builds from an Apple Silicon host
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64|i.86" OR CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+    set_source_files_properties(src/fftop/backend/cpu/simd/avx2.cpp PROPERTIES
+        COMPILE_OPTIONS "-mavx2;-mfma")
+    set_source_files_properties(src/fftop/backend/cpu/simd/avx512.cpp PROPERTIES
+        COMPILE_OPTIONS "-mavx512f;-mfma")
 endif()
 
 if(FFTOP_ENABLE_CUDA)
@@ -85,10 +87,10 @@ if(FFTOP_ENABLE_CUDA)
         find_package(CUDAToolkit REQUIRED)
 
         target_sources(fftop PRIVATE
-            src/fftop/backend/gpu/gpu_backend.cpp
-            src/fftop/backend/gpu/gpu_factory.cpp
-            src/fftop/backend/gpu/gpu_fft.cu
-            src/fftop/backend/gpu/stockham_fft.cu
+            src/fftop/backend/gpu/gpu.cpp
+            src/fftop/backend/gpu/kernels/cooley_tukey_gmem.cu
+            src/fftop/backend/gpu/kernels/stockham_gmem.cu
+            src/fftop/backend/gpu/kernels/stockham_smem.cu
         )
         target_link_libraries(fftop PUBLIC CUDA::cudart)
         target_compile_definitions(fftop PUBLIC FFTOP_ENABLE_CUDA)

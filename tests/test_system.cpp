@@ -15,8 +15,18 @@ TEST(System, DetectsHost) {
                 sys.simd == FFTop::SIMD::AVX512);
 #endif
 
+#if defined(__APPLE__)
+    // sysctl always reports these on macOS
+    EXPECT_GT(sys.cpu_cores, 0u);
+    EXPECT_GT(sys.l1d_bytes, 0u);
+    EXPECT_GT(sys.l2_bytes, 0u);
+#endif
+    if (sys.l1d_bytes && sys.l2_bytes) EXPECT_LE(sys.l1d_bytes, sys.l2_bytes);
+    if (!sys.cuda) EXPECT_EQ(sys.gpu.smem_per_block, 0u);
+
     const std::string text = FFTop::describe_system(sys);
     EXPECT_NE(text.find("cpu:"), std::string::npos);
+    EXPECT_NE(text.find("cache:"), std::string::npos);
     EXPECT_NE(text.find("simd:"), std::string::npos);
     EXPECT_NE(text.find("openmp:"), std::string::npos);
     EXPECT_NE(text.find("nvidia:"), std::string::npos);

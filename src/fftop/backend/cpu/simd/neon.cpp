@@ -16,7 +16,7 @@ namespace FFTop::CPU {
 // Holds 1 complex per vector
 struct NEON {
     static constexpr std::size_t width = 1;
-    using Pack                         = float64x2_t;
+    using Pack = float64x2_t;
 
     static Pack load(const Complex& z) { return vld1q_f64(reinterpret_cast<const double*>(&z)); }
     static void store(Complex& z, Pack v) { vst1q_f64(reinterpret_cast<double*>(&z), v); }
@@ -25,7 +25,7 @@ struct NEON {
     static Pack sub(Pack a, Pack b) { return vsubq_f64(a, b); }
 
     static Pack cmul(Pack a, Pack b) {
-        const Pack homo   = vmulq_f64(a, conj(b));             // arbr, -aibi
+        const Pack homo = vmulq_f64(a, conj(b));               // arbr, -aibi
         const Pack hetero = vmulq_f64(vextq_f64(a, a, 1), b);  // [aibr, arbi]
         return vpaddq_f64(homo, hetero);                       // horizontal add
     }

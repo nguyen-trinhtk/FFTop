@@ -10,10 +10,10 @@
 
 namespace FFTop::Test {
 
-constexpr Real kTolerance = 1e-12;
+constexpr Real TOLERANCE = 1e-12;
 
-constexpr std::size_t kPowersOfTwo[]  = {1, 2, 4, 8, 16, 32, 64};
-constexpr std::size_t kPowersOfFour[] = {1, 4, 16, 64, 256};
+constexpr std::size_t POWERS_OF_TWO[] = {1, 2, 4, 8, 16, 32, 64};
+constexpr std::size_t POWERS_OF_FOUR[] = {1, 4, 16, 64, 256};
 
 inline Buffer impulse(std::size_t n) {
     Buffer x(n, {0, 0});
@@ -37,7 +37,7 @@ inline Buffer mixed(std::size_t n) {
 }
 
 using Signal = Buffer (*)(std::size_t);
-constexpr Signal kSignals[] = {impulse, ramp, mixed};
+constexpr Signal SIGNALS[] = {impulse, ramp, mixed};
 
 inline Real relative_error(const Buffer& got, const Buffer& want) {
     if (got.size() != want.size()) return std::numeric_limits<Real>::infinity();
@@ -51,7 +51,7 @@ inline Real relative_error(const Buffer& got, const Buffer& want) {
 }
 
 inline void expect_close(const Buffer& got, const Buffer& want, const std::string& label = {}) {
-    EXPECT_LT(relative_error(got, want), kTolerance) << label;
+    EXPECT_LT(relative_error(got, want), TOLERANCE) << label;
 }
 
 // FFTop leaves the inverse unnormalised; the reference divides by N.
@@ -74,7 +74,7 @@ void expect_matches_dft(Transform&& transform, const Buffer& input, const std::s
 template <std::size_t N, typename Fn>
 void for_each_input(const std::size_t (&sizes)[N], Fn&& fn) {
     for (auto n : sizes)
-        for (auto signal : kSignals) fn(signal(n));
+        for (auto signal : SIGNALS) fn(signal(n));
 }
 
 }  // namespace FFTop::Test

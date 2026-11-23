@@ -42,6 +42,23 @@ variants:
     execution: parallel
     threads: host
     label: best
+  dft:
+    traversal: dft
+    label: direct DFT (table)
+  four-step:
+    traversal: four-step
+    radix: auto
+    simd: host
+    execution: parallel
+    threads: host
+    label: four-step
+  planner:
+    backend: auto
+    traversal: "-"
+    radix: "-"
+    simd: "-"
+    execution: "-"
+    label: planner (Estimate)
 
 comparisons:
   - id: naive-vs-fft
@@ -75,4 +92,20 @@ comparisons:
     title: Plain iterative vs our best
     question: How much did the CPU work buy us?
     variants: [iterative-r2, best]
+    hold_fixed: false
+  - id: dft-vs-fft
+    title: Direct DFT vs FFT for tiny N
+    question: Below which N is the plain DFT faster? (calibrates dft_max)
+    variants: [dft, iterative-r2]
+    min_k: 1
+    max_k: 7
+  - id: iterative-vs-four-step
+    title: Iterative vs four-step
+    question: Above which N does cache blocking pay off?
+    variants: [best, four-step]
+    min_k: 12
+  - id: planner-vs-best
+    title: Planner choice vs hand-picked best
+    question: Does Estimate pick a plan at least as fast as our best fixed config?
+    variants: [best, planner]
     hold_fixed: false

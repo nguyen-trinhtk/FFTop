@@ -7,8 +7,8 @@
 namespace FFTop {
 struct CacheSizes {
     std::size_t l1d = 0;
-    std::size_t l2  = 0;
-    std::size_t l3  = 0;
+    std::size_t l2 = 0;
+    std::size_t l3 = 0;
 };
 // System config detection
 std::string detect_cpu_name();
